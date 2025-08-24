@@ -1,0 +1,1 @@
+"0","model_partial <- lm(sales ~ TV+radio, data=data_adv)"

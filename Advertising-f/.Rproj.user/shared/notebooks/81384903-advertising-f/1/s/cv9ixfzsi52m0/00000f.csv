@@ -1,0 +1,5 @@
+"0","# Reshape the data from wide to long format"
+"0","data_long <- data_with_total_sum %>%"
+"0","  pivot_longer(cols = c(TV, radio, newspaper, total), "
+"0","               names_to = ""media_type"", "
+"0","               values_to = ""value"")"

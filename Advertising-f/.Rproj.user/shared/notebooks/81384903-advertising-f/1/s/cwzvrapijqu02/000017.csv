@@ -1,0 +1,2 @@
+"0","# Add the dashed lines showing the individual confidence intervals"
+"0","abline(v = rect_x_bounds, lty = 2, col = ""darkred"")"

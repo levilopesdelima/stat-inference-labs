@@ -1,0 +1,2 @@
+"0","residuals <- residuals(model_total)"
+"0","res<-data.frame(residuals)"

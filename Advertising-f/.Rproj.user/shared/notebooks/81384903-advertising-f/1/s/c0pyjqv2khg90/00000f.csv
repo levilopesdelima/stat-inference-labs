@@ -1,0 +1,7 @@
+"0","ecdf_fun <- ecdf(res$residuals)"
+"0","plot_data <- data.frame("
+"0","  x_start = knots(ecdf_fun),"
+"0","  y_val = ecdf_fun(knots(ecdf_fun))"
+"0",") %>%"
+"0","  mutate(x_end = lead(x_start, default = max(x_start))) %>%"
+"0","  filter(x_start != max(x_start))"

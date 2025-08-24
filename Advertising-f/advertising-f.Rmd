@@ -1,0 +1,1351 @@
+---
+title: "An Analysis of Adverstising.cvs (with quadratic terms)"
+author: "Levi Lopes de Lima"
+date: "2025-07-29"
+output:
+  html_document: default
+link-citations: yes
+bibliography: "feyn-notes.bib"
+---
+
+#### Describing the lab
+
+We revisit the data set *Advertising.csv* available [here](https://www.statlearning.com/ "ISLRv2 homepage") and perform the corresponding analysis following the guidelines suggested in  [@james2013introduction, chap. 3]. 
+This data set displays *200* observations of the *sales* (in thousands of units) of a certain good together with the corresponding expenditures (in thousands of dollars) distributed between three types of media (*TV*, *radio* and *newspaper*), thus forming a **design matrix** of size *200x4*. The central problem here is to check whether any of these media somehow influences the sales and to what extent. We examine this by first applying **backward selection** to the fitted least squares linear model (which confirms that spending with *newspaper* fails to be statistically significant) and then incorporating interactions of the remaining regressors (*TV* and *radio*) up to second order, as we find that this 
+quadratic model is statistically more significant than the original strictly linear model. In particular, this quadratic enhancement of the model in principle allows us to numerically optimize the **mean response** for *sales* for a given value of the total expenditure *TV+radio*, at least if we remain in the **interpolation range** covered by the data. 
+
+
+All the math needed to understand the analysis may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes").
+
+
+#### A glimpse at the theory
+
+Before embarking into the data analysis proper, we find it convenient to recall the theoretical underpinnings of 
+a **linear regression model**, which relies on the system of equations
+\[
+{y}_i=\beta_0+\sum_{j=1}^p\beta_j{x}_{ij}+{\rm e}_i,\quad i=1,\cdots, n, 
+\]
+corresponding to $n$ observations of $p$ features (regressors, predictors, independent/explanatory variables, etc.)
+of an underlying population which can be arranged in the $n\times (p+1)$ **design matrix**
+\[
+{\mathfrak x}=
+\left(	
+\begin{array}{c:c}
+	& {\bf x}_1 \\
+	{\bf 1}\,\, & \vdots\\
+	& {\bf x}_n 
+\end{array}
+\right)	
+\]
+where each ${\bf x}_i=(x_{i1},\cdots, x_{ip})$
+is a row $p$-vector (representing the outcome of the $i^{\rm th}$ measurement) and ${\bf 1}$ is the column $n$-vector whose entries all equal $1$. If we suspect that these features explain a response $y_i$ (regressand, dependent/explained variable, etc.) which has also been observed, thus yielding an $n$-vector ${\bf y}$, we may pose ourselves the (exceedingly important!) problem of  *predicting* the response at some unobserved regressor by *best fitting* 
+a (possibly non-linear) functional dependence, say
+${\bf y}=F({\mathfrak x})$,
+to the available data $({\mathfrak x},{\bf y})$. The simplest choice is to postulate that $F$ is **linear**, thus yielding the system above, where the error ${\bf e}$ entails the unobserved noise 
+and the unknown parameter vector 
+ ${\beta}=(\beta_0,\beta_1,\cdots,\beta_p)$
+ should be estimated somehow. If we view $\{({\bf x}_i,{y}_i)\}_{i=1}^n$ as a cloud of points in $\mathbb R^p\times\mathbb R=\mathbb R^{p+1}$, the **least squares** best fitting proposal leads to
+ \[
+ 	\widehat\beta:={\rm argmin}_\beta \|{\bf y}-{{\mathfrak x}}\beta\|^2 
+ \]
+as the natural estimator for $\beta$.  Under the assumption that the **design matrix** $\mathfrak r$ has full column-rank ($=p+1$), which in particular implies the *low-dimensional* condition $p< n$, one sees that
+\[
+ \widehat\beta=(\mathfrak x^T\mathfrak x)^{-1}\mathfrak x^T{\bf y}, 
+\]
+which
+turns out to be the natural candidate for estimating $\beta$. 
+
+But how good is $\widehat\beta$ as an estimator? To ponder on this question, first posed by Gauss in his writings on the applications of the method, we follow the usual statistical route and view the observations $\{({\bf x}_i,{y}_i)\}_{i=1}^n$ as **i.i.d.**
+copies of the same $\mathbb R^{p}\times\mathbb R$-valued random vector $(\mathscr X,\mathscr Y)$ whose distribution is of course unknown. Under mild conditions on the random error (zero mean plus homoscedasticity) we are able to check that $\widehat\beta$ is an **unbiased** estimator for $\beta$ so in particular
+$\mathsf x^T\widehat\beta$ is an **unbiased** estimator for the **mean response**
+\[
+\mathsf x^T\beta=\mathbb E({\mathscr Y}|_{\widetilde{\mathscr X}=\mathsf x }),
+\] 
+where $\widetilde{\mathscr X}=(1,\mathscr X)$ and ${\textsf x}=(1,{\textsf x}_1,\cdots,{\textsf x}_n)$. 
+
+
+Clearly, this solves in a 
+satisfactory manner the problem of characterizing $\widehat\beta$ as a good **point** estimator, but the problem remains of evaluating its fluctuation around the true parameter $\beta$. With this goal in mind, we proceed by further assuming **normality** of the error, ${\bf e}\sim\mathcal N_n(\vec{0},\sigma^2{\rm I})$, and looking at
+
+  - the **fitted vector** $\widehat{\bf y}=\mathfrak x\widehat{\beta}$, which lies in $C(\mathfrak x)\subset \mathbb R^n$,  the column-space of $\mathfrak x$ (recall that $C(\mathfrak x)$ is assumed to have *maximal* dimension $p+1$); 
+  
+  - the **residual vector**, $\widehat{\bf e}:={\bf y}-\widehat{\bf y}$, the orthogonal projection of ${\bf y}$ (and hence of ${\bf e}$ as well) onto the orthogonal complement of $C(\mathfrak x)$ in $\mathbb R^n$.
+  
+Note that $\widehat{\bf y}=H{\bf y}$, where 
+\[
+H=\mathfrak r(\mathfrak r^T\mathfrak r)^{-1}\mathfrak r^T
+\]
+is the **hat matrix**, a symmetric and idempotent matrix defining the orthogonal projection from $\mathbb R^n$ onto $C(\mathfrak r)$. Since $\widehat{\bf e}=({\rm I}-H){\bf y}$, the **residual sum of squares** $RSS:=\|\bf{\widehat e}\|^2$	may be interpreted as a measure of how much variation in ${\bf y}$
+	is left unexplained
+	by the linear regression model, which provides 
+	the fitted vector $\widehat{\bf y}\in C(\mathfrak x)$.
+In any case, from the normality of $\bf e$ we deduce without much difficulty that:
+
+   - $\widehat{\bf e}\sim \mathcal N_{n-p-1}(\vec{0},\sigma^2{\rm I})$;
+   - $\widehat\beta\sim\mathcal N_n(\beta,\sigma^2\mathfrak s)$, where $\mathfrak s:=(\mathfrak x^{T}\mathfrak x)^{-1}$ is the inverse of the **Gram matrix** $\mathfrak x^{T}\mathfrak x$ (in particular, the **covariance matrix** of $\widehat\beta$ is ${\rm cov}(\widehat\beta)=\sigma^2\mathfrak s$);
+   - $(n-p-1)\frac{\widehat\sigma^2}{\sigma^2}\sim \chi^2_{n-p-1}$, where $\widehat\sigma^2:=\frac{\|\widehat{\bf e}\|^2}{n-p-1}$ is an **unbiased** estimator for the unknown error variance $\sigma^2$;
+   - $\{\widehat\beta,\widehat{\bf e}\}$ and $\{\widehat\beta,\widehat\sigma^2\}$ are both independent. 
+
+From this, the standard inferential package for the least squares estimate $\widehat\beta$ is readily available. In particular, this provides: 
+
+   - **confidence intervals** for the parameters: 
+    \[
+   	\beta_i\in \left[\widehat \beta_i\mp \mathfrak t_{n-p-1,\delta/2}\widehat\sigma\sqrt{\mathfrak s_{ii}}\right] 	\,{\rm with}\,{\rm prob.}\,1-\delta,
+   	\]
+as displayed in the standard R summary;
+
+  - **confidence intervals** for the mean response: 
+	 \[
+	 	{{\textsf x}}^T\beta\in\left[
+		{{\textsf x}}^T{\widehat\beta}\mp
+		{{\mathfrak{t}}}_{n-p-1,\delta/2}{\widehat\sigma}
+		\sqrt{{{\textsf x}}^T{{\mathfrak s}}{{\textsf x}}}
+		\right]
+		\,\,\text{with prob.}\,\,1-\delta,
+	 \]
+	 where $\mathsf x$ is as above;
+	 
+  - all the standard **hypothesis tests** commonly employed (and used below) to carry out **variable selection** in a least squares model, at least if we work in the *low-dimensional* regime determined by $p\ll n$.
+
+
+With these theoretical preliminaries out of the way, we now turn to the data...
+
+#### Loading the packages  
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ellipse)
+library(patchwork)
+library(knitr)
+library(kableExtra)
+library(crayon)
+```
+
+
+
+
+#### Viewing the data  
+
+```{r}
+data_adv <- read.csv("Advertising.csv")
+str(data_adv)
+```
+
+
+
+
+Note that the variable *X* is an integer that merely labels the observations so it should not be included in the analysis. To check this, let us look at the data from the proper perspective (putting observations along the lines and features along the columns and isolating the first few observations, thus in alignment with the way the design matrix $\mathfrak x$ was defined...    
+
+```{r}
+head(data_adv)
+```
+
+...which confirms the redundancy of *X*. 
+
+Since the ultimate goal is to understand how advertisement in *TV*, *radio* and *newspaper* explain the response (*sales*), let us first have an idea of how much has been spent in each medium. Let us check this with a simple piping which includes a new column with the total expenditure.   
+
+```{r}
+data_with_total_sum <- data_adv %>% mutate(total=TV+radio+newspaper) %>% select(TV, radio,newspaper,total)
+summary(data_with_total_sum)
+```
+
+Thus, on average much more has been spent in TV than in radio and newspaper taken together! We may graphically confirm this with the appropriate plots.
+
+First we need to reshape the data so as to have a simultaneous visualization:
+
+```{r}
+data_long <- data_with_total_sum %>%
+  pivot_longer(cols = c(TV, radio, newspaper, total), 
+               names_to = "media_type", 
+               values_to = "value")
+```
+
+
+We may start with histograms...
+
+```{r}
+ggplot(data_long, aes(x = value, fill = media_type)) +
+  geom_histogram(binwidth = 10,alpha = 0.5) + 
+  labs(title = "Histogram of Spending per Media (with Total Value)",
+       x = "Value",
+       y = "Frequency (Count)",
+       fill = "Media Type")
+```
+
+...and then refine this by looking at the corresponding density plots:
+
+```{r}
+# Plot the long data as a density function
+ggplot(data_long, aes(x = value, fill = media_type)) +
+  geom_density(alpha = 0.5) + 
+  labs(title = "Filled Density Plot of Spending per Media (with Total Value)",
+       x = "Value",
+       y = "Density",
+       fill = "Media Type") 
+```
+
+Note that any of the four colored regions has unit area, as expected.
+
+The same density plot with the colored fillings removed:
+
+```{r}
+ggplot(data_long, aes(x = value, color = media_type)) +
+  geom_density(linewidth = 1) + # Use linewidth to make lines thicker
+  labs(title = "Density Plot of Spending per Media (with Total Value)",
+       x = "Value",
+       y = "Density",
+       color = "Media Type")
+```
+
+
+
+
+#### Fitting a multiple regression model to the data
+The preliminary analysis gives no clue as to whether the spending should be concentrated in some sub-collection of media  (for instance, *TV* and *radio*). Since this delicate decision is our ultimate concern here, let us fit a multiple least squares model to the data based on the linear expression...
+
+\[
+{\bf y}_{:\rm sales}=\beta_0+\beta_1x_{1:{\rm TV}}+\beta_2x_{2:{\rm radio}}+\beta_3x_{3:{\rm newspaper}}+{\bf e}
+\]
+
+```{r}
+model_total <- lm(sales ~ TV+radio+newspaper, data=data_adv)
+```
+
+... and see what happens. 
+
+Before embarking into the analysis of the corresponding summary, we first observe that the fitting already allows us to access the residual vector  $\widehat{\bf e}$, which, as we have seen above, is the most important element in the least squares inference analysis (as it is the appropriate orthogonal projection of both the response ${\bf y}_{\rm :sales}$ and the error ${\bf e}$, which are directly inaccessible).
+
+The whole summary with the residual entries may be accessed with `residuals(model_total)` but this is useless for a human: it is a vector with *200* entries... 
+
+```{r}
+str(residuals(model_total))
+```
+
+In fact, we may now access a whole array of sample information associated to the model
+with the same syntax.
+
+
+```{r}
+names(model_total)
+```
+
+For instance,... 
+ 
+```{r}
+print(coefficients(model_total))
+```
+...prints the estimated coefficient vector $\beta=(\widehat\beta_0,\widehat\beta_1,\widehat\beta_2,\widehat\beta_3)$ of the fitted model (compare with the much more informative summary below). 
+
+Returning to $\widehat{\bf e}$, we may appeal to a few descriptive plots in order to probe its structure. We first construct the appropriate data.frame: 
+
+```{r}
+residuals <- residuals(model_total)
+res<-data.frame(residuals)
+```
+
+As a check we may summarize this data.frame... 
+
+```{r}
+summary(res)
+```
+
+...which furnishes a brief summary of the **residuals**. Note that the vanishing of the mean is an indication of normality and in fact theoretically expected (due to the projection property mentioned earlier). On the other hand, the median is non-zero and the first and third quantiles are far from being symmetric about the origin, which might be problematic ...  
+
+Let us then pass to a graphical analysis, starting with a histogram, a density plot and a box plot of the residuals displayed side by side... 
+
+```{r}
+# Histogram
+hist_plot <- ggplot(res, aes(x = residuals)) +
+  geom_histogram(binwidth = .4, alpha = 0.6, fill = "steelblue") +
+  labs(title = "Histogram of Residuals",
+       x = "Value",
+       y = "Count")
+# Density Plot
+density_plot <- ggplot(res, aes(x = residuals)) +
+  geom_density(linewidth = 0.8, fill = "steelblue", alpha = 0.6) +
+  labs(title = "Density Plot of Residuals",
+       x = "Value",
+       y = "Density")
+#Box Plot
+box_plot <- ggplot(res, aes(y = residuals)) +
+  geom_boxplot(outlier.colour="red",fill="steelblue") +
+  labs(title = "Box Plot of Residuals",
+       x = "",
+       y = "Value")
+#Combine the plots side-by-side using patchwork
+hist_plot + density_plot + box_plot
+```
+
+
+...which, taken together, resemble normality to a certain extent.
+
+We may also compare the density plot with the related empirical **cumulative distribution function** (CDF). First, we calculate the data needed for the step plot...
+
+```{r}
+ecdf_fun <- ecdf(res$residuals)
+plot_data <- data.frame(
+  x_start = knots(ecdf_fun),
+  y_val = ecdf_fun(knots(ecdf_fun))
+) %>%
+  mutate(x_end = lead(x_start, default = max(x_start))) %>%
+  filter(x_start != max(x_start))
+```
+
+...so the CDF plot, which again resembles normality, may be obtained in the usual way. 
+
+```{r,fig.width = 4, fig.height = 3, fig.align = 'center'}
+
+ggplot() +
+  geom_rect(data = plot_data, 
+            aes(xmin = x_start, xmax = x_end, ymin = 0, ymax = y_val),
+            fill = "steelblue", alpha = 0.6) +
+  geom_step(data = res, aes(x = residuals), stat = "ecdf", linewidth = 1.0) +
+  labs(title="CDF of Residuals",
+       y = "F(Residuals)", x="Residuals") +
+  theme_bw()
+```
+
+
+
+
+
+Let us now complement this with the standard goodness-of-fit plots for testing the model assumptions beyond normality.
+
+```{r}
+par(mfrow=c(2,2))
+plot(model_total)
+```
+
+Thus, as far as linearity[^1], error normality, homoscedasticity and outliers are concerned, the model has (reasonably!) passed the graphical tests.
+
+ [^1]:We will challenge this linearity assumption later on when we discuss the statistical significance of introducing quadratic terms in the model.
+
+Let us now play devil's advocate and check normality **numerically** with a well-known formal test available in R:
+
+```{r}
+shapiro.test(residuals(model_total))
+```
+
+
+
+Thus, the rather small *p*-value indicates that the residuals normality has failed the **Shapiro-Wilk test**. We note, however, that the use of *p*-value-based tests to check normality of residuals is disputable for at least two reasons: i) the tests are not powerful enough for small samples when normality might be important; ii)  they are too powerful for large samples, when normality is less important due to the Central Limit Theorem (CLT). 
+
+Since the *p*-value is small (< 0.05) but the Q-Q plot above looks "almost" straight with only minor wiggles (and only near the extremities), we get strong indication that our data are likely "normal enough." Hence, we will stick to the graphical analysis above, and will assume that the residuals are normally distributed (which indirectly confirms the error normality of the model) for at least two reasons:
+
+   - the sample size is *n=200*, which allows us to confidently appeal to CLT;
+   
+   - all the hypothesis tests used below to perform **variable selection** on the models we shall deal with are quite robust to small departures from normality.    
+
+Thus, let us proceed (with the fingers crossed!) and look at the model summary.
+
+```{r}
+summary(model_total)
+```
+We may substantially improve the presentation by adding colors to the various blocks in this summary using the function *summary_with_colors()* below.
+
+
+```{r}
+summary_colors <- c(
+  block1 = "#e6f0ff",  
+  block2 = "#e6ffe6", 
+  block3 = "#fff5e6", 
+  block4 = "#f9e6ff"   
+)
+
+summary_with_colors <- function(model) {
+  summary_text <- capture.output(summary(model))
+  call_start <- grep("^Call:", summary_text)
+  residuals_start <- grep("^Residuals:", summary_text)
+  coeffs_start <- grep("^Coefficients:", summary_text)
+  footer_start <- grep("^Residual standard error:", summary_text)
+  
+  block1_text <- summary_text[call_start:(residuals_start - 1)]
+  block2_text <- summary_text[residuals_start:(coeffs_start - 1)]
+  block3_text <- summary_text[coeffs_start:(footer_start - 1)]
+  block4_text <- summary_text[footer_start:length(summary_text)]
+  
+  wrap_in_div <- function(text, color) {
+    text_collapsed <- paste(text, collapse = "\n")
+    sprintf(
+      '<div style="background-color: %s; border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin-bottom: 10px;"><pre style="margin: 0;">%s</pre></div>',
+      color,
+      htmltools::htmlEscape(text_collapsed)
+    )
+  }
+  
+  html_output <- paste(
+    wrap_in_div(block1_text, summary_colors["block1"]),
+    wrap_in_div(block2_text, summary_colors["block2"]),
+    wrap_in_div(block3_text, summary_colors["block3"]),
+    wrap_in_div(block4_text, summary_colors["block4"]),
+    sep = "\n"
+  )
+  asis_output(html_output)
+}
+
+highlight_block_text <- function(text, block_number) {
+  color <- summary_colors[block_number]
+  sprintf(
+    '<span style="background-color: %s; padding: 2px 5px; border-radius: 4px; font-family: monospace;">%s</span>',
+    color,
+    text
+  )
+}
+
+print_summary_block <- function(model, block_number) {
+  if (!(block_number %in% 1:4)) {
+    stop("Invalid block_number. Please choose a number from 1 to 4.")
+  }
+  
+summary_text <- capture.output(summary(model))
+  call_start <- grep("^Call:", summary_text)
+  residuals_start <- grep("^Residuals:", summary_text)
+  coeffs_start <- grep("^Coefficients:", summary_text)
+  footer_start <- grep("^Residual standard error:", summary_text)
+  
+  all_blocks <- list(
+    "1" = summary_text[call_start:(residuals_start - 1)],
+    "2" = summary_text[residuals_start:(coeffs_start - 1)],
+    "3" = summary_text[coeffs_start:(footer_start - 1)],
+    "4" = summary_text[footer_start:length(summary_text)]
+  )
+  
+  selected_text <- all_blocks[[as.character(block_number)]]
+  selected_color <- summary_colors[block_number]
+  
+  text_collapsed <- paste(selected_text, collapse = "\n")
+  html_output <- sprintf(
+      '<div style="background-color: %s; border: 1px solid #ddd; border-radius: 5px; padding: 10px;"><pre style="margin: 0;">%s</pre></div>',
+      selected_color,
+      htmltools::htmlEscape(text_collapsed)
+  )
+  asis_output(html_output)
+}
+```
+
+```{r}
+summary_with_colors(model_total)
+```
+
+
+Let us examine the various blocks of this colorful summary more closely. 
+
+- Of course, the `r highlight_block_text("first block", 1)` is there just to remind us the formula used in fitting the least squares model.
+
+- The `r highlight_block_text("second block", 2)` gives a summary of the residuals which exactly matches the previous one and indicates a fairly symmetric distribution around the median (*~0.24*).   
+
+- Let us now look at the `r highlight_block_text("last block", 4)` in the summary. 
+
+It first informs us the *rse*, the *residual standard error*, which  is the square root of the *residual variance*[^2] $\|\widehat{\bf e}\|^2/196$, where $196=200-3-1$ counts the degrees of freedom (*df*) of the model.  
+  
+  [^2]:Recall that the residual variance is an *unbiased* estimator for the unknown error variance.
+
+```{r}
+print(df.residual(model_total))
+```
+
+The *residual squared sum* $RSS:=\|\widehat{\bf e}\|^2$ may be extracted from the fitting as follows.
+
+```{r}
+deviance(model_total)
+```
+  
+Thus, the residual variance is... 
+  
+```{r}
+deviance(model_total)/196
+```
+
+...and the rse is... 
+  
+```{r}
+sqrt(deviance(model_total)/196)
+```
+  
+...which matches the value given in the summary above.
+  
+  - No essential difference between *R^2^* and adjusted *R^2^*, with both assuring about 90% of explanation for the variation of the response, which is quite good! 
+
+  - Finally, the rather small *p*-value for the *F*-test (against the null model, in which none of the predictors is statistically significant) shows that this null hypothesis should  be rejected and at least one parameter is non-zero (with a very high significance level).
+  
+As an addendum, we may also obtain the same test via ANOVA: we first fit the null model...  
+     
+```{r}
+model_null <- lm(sales ~ 1, data=data_adv)
+```
+
+...and then run the corresponding ANOVA, which compares this to *model_total*:      
+
+```{r}
+anova(model_null,model_total)
+```
+Since the *F*-statistics in both cases is about the same (*F~570.3*), we are done.
+          
+  
+- We may also directly obtain the relevant *F*-statistics in this test (*F*=570.3) by means of the textbook formula, but *anova()* clearly does the job; more on this below, when we compare nested models.
+
+
+
+- The *F*-test in the last block above fails to provide statistical elements to decide which specific variables should be discarded, as it only detects the non-vanishing of at least one variable. 
+
+To ponder on this latter issue, we look at the summary's `r highlight_block_text("third block", 3)`, in which the vanishing of each parameter estimate is tested separately. For our convenience, let us reproduce it here.
+
+
+```{r block-3-only, results='asis'}
+print_summary_block(model_total, 3)
+```
+
+
+
+As explained elsewhere, under the corresponding null hypothesis the relevant statistics is 
+\[
+\frac{\textrm{Estimate}}{\textrm{Std. Error}}=\frac{\widehat\beta_i}{\widehat\sigma\sqrt{\mathfrak s_{ii}}},
+\]
+whose observed values are displayed in the third column (under the head *t value*). Under error normality and homocesdaticity (which have been "empirically" verified above) this statistics is known to follow a $\mathfrak t$-distribution with 196 *df*s, so from the available *p*-values (in the last column) we see that only *newspaper* **fails** to be statistically significant for explaining the response. We may confirm this by looking at the 95% confidence intervals for the corresponding estimated parameters...  
+
+
+
+```{r}
+confint(model_total)
+```
+
+...which may be embedded in the previous block as its two last columns:
+
+```{r}
+print_coeffs_with_ci <- function(model) {
+  s <- summary(model)
+  coeffs <- s$coefficients
+  cis <- confint(model)
+  get_stars <- function(p_value) {
+    if (p_value < 0.001) return("***")
+    if (p_value < 0.01)  return("**")
+    if (p_value < 0.05)  return("*")
+    if (p_value < 0.1)   return(".")
+    return(" ")
+  }
+  output_lines <- "Coefficients:"
+  col_names <- sprintf("%-12s %10s %11s %8s %10s %10s %9s %s", 
+                       "", "Estimate", "Std. Error", "t value", "Pr(>|t|)", "2.5 %", 
+                       "97.5 % ", "")
+  output_lines <- c(output_lines, col_names)
+  for (i in 1:nrow(coeffs)) {
+    row_name <- rownames(coeffs)[i]
+    line_data <- c(
+      sprintf("%-12s", row_name), 
+      sprintf("%10.6f", coeffs[i, "Estimate"]),
+      sprintf("%11.6f", coeffs[i, "Std. Error"]),
+      sprintf("%8.3f",  coeffs[i, "t value"]),
+      sprintf("%10s", format.pval(coeffs[i, "Pr(>|t|)"], digits = 2)),
+      sprintf("%10.4f", cis[i, 1]), 
+      sprintf("%9.4f", cis[i, 2]),  
+      get_stars(coeffs[i, "Pr(>|t|)"])
+    )
+    output_lines <- c(output_lines, paste(line_data, collapse = " "))
+  }
+
+  output_lines <- c(output_lines, "---")
+  output_lines <- c(output_lines, "Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1")
+  text_collapsed <- paste(output_lines, collapse = "\n")
+  color <- summary_colors["block3"]
+  html_output <- sprintf(
+      '<div style="background-color: %s; border: 1px solid #ddd; border-radius: 5px; padding: 10px;"><pre style="margin: 0;">%s</pre></div>',
+      color,
+      htmltools::htmlEscape(text_collapsed)
+  )
+  asis_output(html_output)
+}
+```
+
+```{r}
+print_coeffs_with_ci(model_total)
+```
+
+
+
+As expected, the only confidence interval containing 0 is the last one, which means that we may discard *newspaper* as a predictor if we wish. Besides, we note that the interval for *TV* is much closer to 0 than the one for *radio*, an information not available in the corresponding *p*-values, indicating that this latter variable is slightly more significant that the former one (this is already hinted at if we look at the respective $\mathfrak t$-statistics: *32.8* and *21.9*). 
+In particular, we see that:
+  
+  - one thousand dollars of increasing on TV advertising explains an **increasing** in sales of about *43* to *48* units, with an estimated value of *46*;
+  
+  - one thousand dollars of increasing on radio advertising explains an **increasing** in sales of about *171* to *205* units, with an estimated value of *188*;
+  
+  - one thousand dollars of increasing on newspaper advertising explains a variation in sales that goes from a **decreasing** of about *13* to an **increasing** of about *10* units, with an estimated net value of *1* (hence, virtually null).
+  
+Taken together, these items mean that spending in radio is about four times more efficient than spending in TV, with these variables certainly being significant for explaining sales, whereas spending in newspaper yields a practically null effect on sales. This detailed analysis illustrates the need to complement the *p*-value information with the construction of confidence intervals. Finally, although the summary confirms that it is statistically significant, in general the *intercept* $\beta_0$ is **not interpretable** and we follow this tradition here. 
+
+Following the suggestion above, we now simply discard *newspaper* and fit a model with the remaining predictors:
+
+\[
+{\bf y}_{:\rm sales}=\beta_0+\beta_1x_{1:{\rm TV}}+\beta_2x_{2:{\rm radio}}+{\bf e}.
+\]
+
+```{r}
+model_partial <- lm(sales ~ TV+radio, data=data_adv)
+```
+
+As usual, we now look at the corresponding residuals.  
+
+```{r}
+residuals_partial <- residuals(model_partial)  
+res_partial<-data.frame(residuals_partial) 
+summary(res_partial)
+```
+and the associated plots  
+
+
+```{r}
+#Data.frame
+residuals_p <- residuals(model_partial)
+res_p<-data.frame(residuals_p)
+#Histogram
+hist_plot_p <- ggplot(res_p, aes(x = residuals_p)) +
+  geom_histogram(binwidth = .4, alpha = 0.6, fill = "steelblue") +
+  labs(title = "Histogram of Residuals",
+       x = "Value",
+       y = "Count")
+#Density Plot
+density_plot_p <- ggplot(res_p, aes(x = residuals_p)) +
+  geom_density(linewidth = 0.8, fill = "steelblue", alpha = 0.6) +
+  labs(title = "Density Plot of Residuals",
+       x = "Value",
+       y = "Density")
+#Box Plot
+box_plot_p <- ggplot(res_p, aes(y = residuals_p)) +
+  geom_boxplot(outlier.colour="red",fill="steelblue") +
+  labs(title = "Box Plot of Residuals",
+       x = "",
+       y = "Value")
+#Combine the plots side-by-side using patchwork
+hist_plot_p + density_plot_p + box_plot_p
+```
+
+Let us also look at the model summary... 
+
+```{r}
+summary_with_colors(model_partial)
+```
+
+...with the third block adjusted to contain the *95%* confidence intervals:
+
+```{r}
+print_coeffs_with_ci(model_partial)
+```
+
+
+Now we see that:
+  
+  - one thousand dollars of increasing on TV advertising explains an **increasing** in sales of about *43* to *48* units, with an estimated value of *46*;
+  
+  - one thousand dollars of increasing on radio advertising explains an **increasing** in sales of about *172* to *204* units, with an estimated value of *188*;
+
+
+Thus, no essential difference from the previous model (with *newspaper* included). 
+
+We may check this using ANOVA to compare the models (*model_partial* **nested** inside *model_total*).
+
+
+```{r}
+anova(model_partial,model_total)
+```
+
+
+Noteworthy mentioning that the textbook formula for the *F*-statistics *F=0.0312* is in general given by
+
+\begin{equation}\label{text:book}
+\frac{(RSS_{\rm Partial}-RSS_{\rm Total})/(p-q)}{RSS_{\rm Total}/(n-p-1)}\sim
+F_{p-q,n-p-1}\quad \textrm{under the null},
+\end{equation}
+where $q<p$ is the number of remaining variables in the partial/null model. In our case, this 
+reduces to... 
+
+```{r}
+{deviance(model_partial)-deviance(model_total)/{3-2}}/{deviance(model_total)/
+    {200-3-1}}
+```
+
+...from which the associated *p*-value may be obtained in the standard way:
+
+
+```{r}
+p_value <- pf(0.03122805, 1, 196, lower.tail = FALSE)
+print(p_value)
+```
+
+The large *p*-value (*~0.86*), obtained by either method, confirms that the null model (*model_partial*) should **not** be rejected, so we may safely discard *newspaper* from our original model. 
+
+As a final checking of *model_partial*, let us draw the 95% confidence ellipsis for the whole vector parameter *(TV,radio)*, with the central dot representing the estimate and the dashed lines indicating the end-points of the individual confidence intervals. For this we will use the ``ellipse`` package available in R, 
+so the code below just tells this package how
+to juxtapose to its output 
+the rectangle corresponding to the confidence intervals. 
+
+
+
+```{r}
+params_to_plot <- c(2, 3) 
+conf_level <- 0.95
+
+ellipse_coords <- ellipse(model_partial, which = params_to_plot, level = conf_level)
+
+conf_intervals <- confint(model_partial, level = conf_level)
+rect_x_bounds <- conf_intervals[params_to_plot[1], ] 
+rect_y_bounds <- conf_intervals[params_to_plot[2], ] 
+
+point_estimate <- coef(model_partial)[params_to_plot]
+
+param_names <- names(point_estimate)
+
+# Star plotting 
+plot(0, type = 'n', 
+     xlim = range(ellipse_coords[, 1], rect_x_bounds),
+     ylim = range(ellipse_coords[, 2], rect_y_bounds),
+     xlab = paste("Coefficient for", param_names[1]),
+     ylab = paste("Coefficient for", param_names[2]),
+     main = "Joint vs. Individual 95% Confidence Regions")
+
+grid()
+
+rect(xleft = rect_x_bounds[1], 
+     ybottom = rect_y_bounds[1], 
+     xright = rect_x_bounds[2], 
+     ytop = rect_y_bounds[2],
+     col = rgb(1, 0, 0, alpha = 0.3),  
+     border = "red")
+
+#alpha stands for semi-transparence
+polygon(ellipse_coords, 
+        col = rgb(0, 0, 1, alpha = 0.3),
+        border = "blue")
+
+abline(v = rect_x_bounds, lty = 2, col = "darkred")
+abline(h = rect_y_bounds, lty = 2, col = "darkred")
+
+points(point_estimate[1], point_estimate[2], 
+       pch = 19,         
+       cex = 1.5,       
+       col = "black")
+
+# Add a legend 
+legend("topright", 
+       legend = c("Joint Confidence Region (Ellipse)", "Individual CIs (Rectangle)", "Point Estimate"),
+       fill = c(rgb(0, 0, 1, alpha = 0.3), rgb(1, 0, 0, alpha = 0.3), NA),
+       border = c("blue", "red", NA),
+       pch = c(NA, NA, 19),
+       col = c(NA, NA, "black"),
+       bty = "n") 
+```
+
+
+
+
+Since the ellipse does **not** enclose the origin, the whole vector estimate should be considered statistically significant. Also, the axes of the ellipse are perfectly aligned with the coordinate axes, which indicates that the coefficient estimates are virtually uncorrelated. To directly check this alignment, we 
+first recall that ``ellipse``
+determines this random ellipsoidal region by means of the general expression
+\[
+\mathcal E_{n,p,\delta}(\widehat\beta;\widehat\sigma^2)=\left\{
+		\beta'\in \mathbb R^{p+1};(\widehat\beta-\beta')^t{{\mathfrak s}}(\widehat\beta-\beta')\leq (p+1)\widehat\sigma^2{{{\textsf f}}}_{p+1,n-p-1,\delta} 
+		\right\}.
+\]
+On the other hand, 
+the estimated covariance matrix ${\rm cov}(\widehat\beta)\approx\widehat\sigma^2\mathfrak s$ is stored in ``model_partial`` as...
+
+```{r}
+cov_matrix <- vcov(model_partial)
+```
+
+...so if we pass to the sub-matrix that really matters...
+
+```{r}
+vars_of_interest <- c("TV", "radio")
+sub_cov_matrix <- cov_matrix[vars_of_interest, vars_of_interest]
+print(sub_cov_matrix)
+```
+
+...and use it to compute the tilting angle $\theta$ of our ellipse by means of the well-known formula...
+
+```{r}
+theta <- atan(2*sub_cov_matrix[1,2]/(sub_cov_matrix[1,1]-sub_cov_matrix[2,2]))/2
+print(theta)  
+```
+
+...we end up with a quite negligible value indeed.
+
+
+
+Let us proceed with the analysis and construct **confidence** and **prediction** intervals (for the **mean response** and the **response**, respectively) of *model_partial*. 
+First, let us estimate the **mean response**
+\[
+\mathbb E\left({\bf y}_{\rm :sales}|_{({\bf X}_{\rm 1:TV},{\bf X}_{\rm 2:radio})=(TV,radio)}\right),
+\]
+which is
+the expected value of *sales* restricted to the sub-population defined by a given value of *(TV,radio)*.
+Thus, we are supposed to enter with the values of the pair *(TV,radio)* in a *function()* whose output should be the fitted value for *sales* and the endpoins of the corresponding confidence interval.
+
+
+```{r}
+int_conf_partial <- function(new_TV, new_radio, model, conf_level = 0.95) {
+  # The predict() function requires the new data to be in a data frame.
+  # The column name ('TV') MUST match the predictor name in the model's formula.
+  new_data_point <- data.frame(TV = new_TV, radio = new_radio)
+  # Use predict() to calculate the confidence interval
+  confidence_interval <- predict(
+    model, 
+    newdata = new_data_point, 
+    interval = "confidence", 
+    level = conf_level
+  )
+return(confidence_interval)
+}
+```
+
+...so that evaluating *int_conf_partial()* at a few values of *(TV,radio)* gives
+
+```{r}
+int_conf_partial(new_TV = 350, new_radio = 0, model = model_partial)
+int_conf_partial(new_TV = 340, new_radio = 10, model = model_partial)
+int_conf_partial(new_TV = 290, new_radio = 60, model = model_partial)
+int_conf_partial(new_TV = 280, new_radio = 70, model = model_partial)
+int_conf_partial(new_TV = 10, new_radio = 340, model = model_partial)
+int_conf_partial(new_TV = 0, new_radio = 350, model = model_partial)
+```
+
+We may conveniently arrange this in a table with as many multiple new data points as we wish. The idea is to inform the list of regressors in a data.frame (*new_data*) which appears as a parameter in a new function.
+
+```{r}
+get_confidence_table <- function(new_data, model, conf_level = 0.95) {
+  # This is to check if new_data is a data frame
+  if (!is.data.frame(new_data)) {
+    stop("Error: 'new_data' must be a data frame.")
+  }
+  
+  confidence_intervals <- predict(
+    model, 
+    newdata = new_data, 
+    interval = "confidence", 
+    level = conf_level
+  )
+# Combine and return 
+  result_table <- cbind(new_data, confidence_intervals)
+return(result_table)
+}
+```
+
+The function asks for a concrete data.frame, which we may provide by hand. After that, printing the table is straightforward.  
+
+```{r}
+my_new_points <- data.frame(
+  TV =    c(350, 340 , 290, 280, 10, 0),
+  radio = c(0,  10,  60,  70, 340, 350)
+)
+results_table <- get_confidence_table(new_data = my_new_points, model = model_partial)
+print(results_table)
+```
+
+
+
+The same table may be obtained if we prescribe instead the total spending (*new_spend*) and the spending in one of the media, say TV, so that the spending in the other medium, say radio, is the difference between these values. Of course, this is just a matter of redefining the data.frame and rewriting the code accordingly (but still using the same function as before!).
+
+
+```{r}
+new_spend <- 350
+TV <- c(350, 340 , 290, 280, 10, 0)
+radio <- new_spend - TV
+my_new_points_s <- data.frame(
+  TV     ,
+  radio 
+)
+results_table_s <- get_confidence_table(new_data = my_new_points_s, model=model_partial)
+print(results_table_s)
+```
+
+...which matches the previous table. 
+
+
+Looking at the extreme values in this table we see that, with an overall expenditure of *350*, we have that:
+
+   - an expenditure of *350* (in thousands of dollars) in TV leads to an average sale of about *19.000* units;
+   
+   - an expenditure of *0* in TV leads to a average sale of about *69.000* units;
+
+How should we interpret this rather strange outcome? Does it mean that we should concentrate the spending in radio and simply forget about TV?
+
+The problem here seems to be that in general it may be **too risky** to make estimates for the mean response for a range of values of the regressors lying very far from those covered by data (this is usually known as **extrapolation**). To check this, let us summarize the spending associated to *model_partial*, thus completely ignoring the spending with *newspaper* but including *sales*.
+
+
+```{r}
+data_partial_sum <- data_adv %>% mutate(partial_sum=TV+radio) %>% select(sales, TV, radio,partial_sum)
+summary(data_partial_sum)
+```
+
+We thus see that the extreme choices above correspond to values of *(TV,radio)* very far from the mean and the median provided by the data. Thus, a more realistic, data-driven estimate would be to restrict ourselves to **interpolation** (where we remain within the range covered by data) by choosing values around *(TV,radio)=(150,25)*, 
+
+```{r}
+int_conf_partial(new_TV = 150, new_radio = 25 , model = model_partial)
+```
+which gives about *14.500* sales (on average) and remains quite close to the overall sales mean. 
+
+By keeping the total spending as *175*, we may try small variations around *TV=150*:
+
+
+```{r}
+new_spend <- 175
+TV <- c(140, 145 , 150, 155, 160)
+radio <- new_spend - TV
+my_new_points_s_n <- data.frame(TV,radio)
+results_table_s_n <- get_confidence_table(new_data = my_new_points_s_n, model=model_partial)
+print(results_table_s_n)
+```
+
+which turns out to be a quite satisfactory output (in the sense that the confidence intervals are much tighter). 
+
+Now let us modify the code above to obtain the corresponding prediction intervals, which estimate the response itself:
+\[
+{\bf y}_{\rm :sales}|_{({\bf X}_{\rm 1:TV},{\bf X}_{\rm 2:radio})=(TV,radio)}
+\]
+
+
+
+```{r}
+int_pred_partial <- function(new_TV, new_radio, model, conf_level = 0.95) {
+ 
+  new_data_point <- data.frame(TV = new_TV, radio = new_radio)
+  
+  prediction_interval <- predict(
+    model, 
+    newdata = new_data_point, 
+    interval = "prediction", 
+    level = conf_level
+  )
+  
+  return(prediction_interval)
+}
+```
+
+...so that using our realistic choice above would yield the prediction interval...
+
+```{r}
+int_pred_partial(new_TV = 150, new_radio = 25, model = model_partial)
+```
+...which is much wider than the confidence interval for the mean response.
+
+Of course, we may also provide a table of predicted values around *(TV,radio)=(150,25)* by slightly modifying the codes above, but this is left as an exercise. 
+
+
+
+A **summary** of the analysis so far: 
+
+- We started with *model_total*, a least squares model in which *sales* is supposedly explained by advertisements in *TV*, *radio* and *newspaper*, and which passed the usual tests of linearity, normality, homoscedasticity and outliers;
+
+- We have seen, however, that *newspaper* fails to significantly explain *sales*, so we discarded it and considered *model_partial*, which uses only *TV* and *radio* as regressors;
+
+- The models have been compared to one another via a nested *F*-test, with a large *p*-value justifying the reduction to the smaller model;
+
+- Thus, we discarded *model_total*, considered only *model_partial* and proceeded to examine its explanatory/predictive power. 
+
+In fact, the procedure above constitutes the first step in applying **variable selection** by means of **backward selection**, an algorithm which can be organized as follows:
+
+  - Start with the full model (in our case, *model_total*), thus incorporating all the regressors in the data (in our case, *TV*, *radio* and *newspaper*);
+  
+  - Run a least squares fitting for this full model and then discard the **least** significant regressor, namely, that  associated to the parameter displaying the larger *p*-value in the corresponding $\mathfrak t$-test (in our case, *newspaper*). Preferably, this should be accompanied by an examination of the confidence intervals for the involved parameters;
+  
+  - Fit the reduced  model (in our case, *model_partial*) and iterate the previous step by removing one regressor at a time up to the point in which some pre-assigned **stopping rule** is reached (usually, when all *p*-values are strictly less than an acceptable significance level, say *0.05*).
+  
+Let us then extract the *p*-values of the nested models considered so far.
+
+The can be done either separately for each model... 
+
+
+```{r}
+p.values.t <- function(model) {
+  summary(model)$coefficients[, "Pr(>|t|)"]
+}
+p.values.t(model_total)
+p.values.t(model_partial)
+```
+
+
+... or in a more informative manner, by arranging the *p*-values in a table with colors demarcating the nested models:
+
+```{r}
+model_list <- list(full_model = model_total, reduced_model = model_partial)
+#
+extract_pvals_simple <- function(model) {
+  coef_table <- summary(model)$coefficients
+ df <- data.frame(
+  Regressor = rownames(coef_table),
+    P_Value = coef_table[, "Pr(>|t|)"]
+  )
+rownames(df) <- NULL
+return(df)
+}
+#
+final_table <- map_dfr(model_list, extract_pvals_simple, .id = "Model")
+#
+final_table %>%
+  # Conditionally format the P-Value column
+  mutate(P_Value_Formatted = ifelse(P_Value < 0.001,
+                                    sprintf("%.3e", P_Value),
+                                    sprintf("%.4f", P_Value))) %>%
+  select(Model, Regressor, P_Value_Formatted) %>%
+  kable(format = "html", 
+        caption = "Model Comparison with P-Values",
+        col.names = c("Model", "Regressor", "P-Value")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  row_spec(which(final_table$Model == "full_model"), 
+           background = "#D9E3F4") %>% 
+  row_spec(which(final_table$Model == "reduced_model"), 
+           background = "#F4EAD9")
+```
+
+This indeed shows that:
+
+   - removing *newspaper* from the full model (*model_total*) is justified (in fact, it is the only regressor whose coefficient has a *p*-value larger then *0.05*);
+   
+   - the reduced model (*model_partial*) already meets the stopping rule (as all of its coefficients already have associated *p*-values less than *0.05*)
+
+
+Thus, as far as **backward selection** is concerned, we must adopt *model_partial* as our final **linear** model and explore further its explanatory/predictive power (in alignment with what we already did above).
+
+
+#### The effect of higher order interactions
+
+The analysis above only takes into account the presence of **linear** terms in the regression model. And how about adding **higher order terms** in the main regressors (*TV* and *radio*) to the linear model? 
+Here we examine this by starting with
+
+
+\[
+{\bf y}_{:\rm sales}=\beta_0+\beta_1x_{1:{\rm TV}}+\beta_2x_{2:{\rm radio}}+\beta_{12}x_{12:{\rm TV\times sales}}+{\bf e},
+\]
+
+which incorporates the interaction regressor $x_{12}=x_1x_2$ to *model_partial*. 
+
+We may run this in at least two different ways. First, we may manually construct a new data.frame using...
+
+```{r}
+data_partial_int <- data_adv %>% mutate(int=TV*radio) %>% select(sales, TV, radio,int)
+head(data_partial_int)
+```
+
+...and then fit the expanded model with the interaction variable *int* included as an independent regressor...
+
+```{r}
+data_partial_int_1 <- lm(sales ~ TV + radio + int, data=data_partial_int)
+print_coeffs_with_ci(data_partial_int_1)
+```
+
+...or simply use...
+
+
+```{r}
+model_partial_int_2 <- lm(sales ~ TV*radio, data = data_adv)
+# Here, 'TV*radio' is a shorthand for "TV + radio + TV:radio", thus including the first order terms already present in the linear model
+print_coeffs_with_ci(model_partial_int_2)
+```
+...which gives the same results. Note, however, that by comparing this with the summary of 
+*model_partial*, the strictly linear model,...
+
+```{r}
+print_coeffs_with_ci(model_partial)
+```
+...we see that the estimated coefficients for the main variables (*TV* and *radio*) have changed, which anticipates difficulties in interpreting this expanded model. Let us simply ignore this for the moment and fit the full model incorporating all possible (polynomial) interactions up to second order:  
+
+\[
+{\bf y}_{:\rm sales}=\beta_0
++\beta_1x_{1:{\rm TV}}+\beta_2x_{2:{\rm radio}}
++\beta_{12}x_{12:{\rm TV\times sales}}
++\beta_{11}x_{11:{\rm TV\times TV}}
++\beta_{22}x_{22:{\rm radio\times radio}}
++{\bf e}.
+\]
+
+
+```{r}
+model_full_raw <- lm(sales ~ TV*radio + I(TV^2) + I(radio^2), data = data_adv)
+summary_with_colors(model_full_raw)
+```
+
+We immediately see that, under the usual *95%* threshold, $x_{22:{\rm radio\times radio}}$ fails to be significant (*p*-value *0.43*) whereas $x_{1:{\rm radio}}$ came close to it (*p*-value *0.03*), but this might be merely an effect of correlations introduced in this full model due to the addition of the interaction terms. In this regard, we should have in mind that a **high correlation** between predictors can cause several problems in a regression model such as:
+
+  - **Unstable Coefficient Estimates:** The estimated coefficients for a main predictor, hereafter denoted by *main*, and its square *main^2*, which are obviously **correlated** to a high degree, can be very sensitive to small changes in the data; 
+  
+  - **Inflated Standard Errors:** Perhaps more importantly, the standard errors for the correlated predictors become large, which makes the confidence intervals for the coefficients very wide, so that some variable may be displayed as **not** statistically significant when it actually has a strong effect in explaining the model;
+
+  - **Difficulty in Interpretation:** The coefficients for *main* are supposed to represent the effect of a one-unit increase in *main* while holding all the remaining coefficients, in particular *main^2*, constant, which is at least logically awkward. 
+
+We may remedy this by using the *poly()* function, which, by default, doesn’t just calculate *main* and *main^2* but instead creates a new set of variables that are orthogonal (i.e., perfectly uncorrelated) to each other and still retaining the linear and quadratic information from the original main variables. This solves the problems mentioned above, as the new predictors are uncorrelated by design:
+
+   - **Stable and Independent Coefficients:** Because the terms are uncorrelated, the coefficient estimated for the linear component is independent of the coefficient estimated for the quadratic component. In particular, adding the quadratic term to the model will not change the coefficient of the linear term, which is a huge advantage for model building, as it allows us to test the contribution of each polynomial degree in a clean way;
+
+   - **Clearer Hypothesis Testing:** We can confidently use the *p*-value of the quadratic term to see if it significantly improves the model, without its statistical significance being obscured by its high correlation with the linear term.
+
+With this theoretical discussion out of the way, we may run the suggested procedure as follows.
+
+```{r}
+model_poly_orth <- lm(sales ~ TV:radio + poly(TV, 2) + poly(radio, 2), data = data_adv)
+summary_with_colors(model_poly_orth)
+```
+
+We should be aware, however, that using orthogonal polynomials changes the interpretation of the individual coefficients, as they no longer correspond to the likes of *main* and  *main^2* anymore. On the other hand, as it is clearly seen in the summaries above, the overall model fit (*R*-squared, *F*-statistic) and the fitted values of *model_poly_orth* are identical to their counterparts in *model_full_raw*, with its raw, collinear terms. We find it convenient to append a couple of brief remarks justifying these claims on theoretical grounds:
+
+   - when passing from one model to the other, the design matrix is right multiplied by a non-singular *(p+1)x(p+1)* matrix $M$, precisely $\mathfrak x_{\rm ortho}=\mathfrak x_{\rm raw}M$, and since the hat matrix of a model turns out to be insensitive to this kind of linear transformation, we conclude that both $\widehat{\bf y}$ and $\widehat{\bf e}$ remain unchanged (which is nice for **goodness of fit**).  
+   
+   - since the vector of regressors ${\mathsf x}=(1,{\mathsf x}_1,{\mathsf x}_2,{\mathsf x}_{12},{\mathsf x}_{11},{\mathsf x}_{22})$ used in doing predictions and the vector of estimated coefficients $\widehat\beta=({\widehat\beta}_0,{\widehat\beta}_1,{\widehat\beta}_2,{\widehat\beta}_{12},{\widehat\beta}_{11},{\widehat\beta}_{22})$ lie in dual vector spaces, we easily see that 
+when passing from one model to the other these vectors certainly change but their inner product ${\mathsf x^T\widehat{\beta}}$, which define the **response surfaces**, remains the same (which is nice for **prediction**). 
+
+In other words, we trade direct interpretability of individual coefficients for numerical stability and more reliable statistical inference. 
+
+We may check this latter point (regarding prediction) for our models by comparing the mean responses...
+
+
+```{r}
+# Get the predicted values from both models
+predictions_raw <- predict(model_full_raw, newdata = data_adv)
+predictions_orth <- predict(model_poly_orth, newdata = data_adv)
+
+# Check if the prediction vectors are numerically equal
+all.equal(predictions_raw, predictions_orth)
+#> [1] TRUE
+```
+...which can be graphically confirmed:
+
+
+```{r}
+pred_df <- data.frame(
+  Raw_Predictions = predictions_raw,
+  Orthogonal_Predictions = predictions_orth
+)
+
+# Plot the predictions
+plot(
+  pred_df$Raw_Predictions,
+  pred_df$Orthogonal_Predictions,
+  main = "Prediction Comparison: Raw vs. Orthogonal",
+  xlab = "Predictions from Raw Model",
+  ylab = "Predictions from Orthogonal Model",
+  pch = 19,
+  col = "blue"
+)
+
+# Add a perfect "y=x" line: if points are on this line, they are identical.
+abline(a = 0, b = 1, col = "red", lwd = 2)
+
+legend("topleft", legend = "Perfect y=x Line", col = "red", lty = 1, lwd = 2)
+```
+
+
+
+Now, the last summary...
+
+```{r}
+print_coeffs_with_ci(model_poly_orth)
+```
+
+
+...indicates that *radio^2* (equivalently, *poly(radio,2)2*) remains insignificant 
+whereas the significance of *radio* (equivalently, *poly(radio,2)1*) gets restored, 
+so we would like to enter into **backward selection** mode and remove *radio^2* from *model_poly_orth*. In order to validate this with ANOVA, we must fit the reduced, simpler model so as to pass to it after not being able to reject the null hypothesis. Instead of working directly with *model_poly_orth*, we prefer to manually generate all the polynomial terms, add them to a data frame as new columns, and then build the new version of the full model using these explicit column names.
+
+```{r}
+# Generate the orthogonal polynomial matrix for TV and radio
+poly_tv <- poly(data_adv$TV, 2)
+colnames(poly_tv) <- c("TV_poly1", "TV_poly2") 
+poly_radio <- poly(data_adv$radio, 2)
+colnames(poly_radio) <- c("radio_poly1", "radio_poly2") 
+# Create a new data frame with these columns
+data_adv_poly <- cbind(data_adv, poly_tv, poly_radio)
+```
+
+For the sake of completeness, let us re-fit the full model to verify that our manual process correctly reproduces the original model *model_poly_orth*. Indeed...
+
+
+```{r}
+model_poly_manual <- lm(sales ~ TV:radio + TV_poly1 + TV_poly2 + radio_poly1 + radio_poly2, 
+                        data = data_adv_poly)
+summary_with_colors(model_poly_manual)
+```
+...thus yielding a summary which completely agrees with the one for *model_poly_orth*, as desired.
+
+We may now fit the reduced model by simply omitting *radio_poly2* from *model_poly_manual*...
+
+
+```{r}
+model_sub <- lm(sales ~ TV:radio + TV_poly1 + TV_poly2 + radio_poly1, 
+                data = data_adv_poly)
+summary_with_colors(model_sub)
+```
+
+Let us display the *p*-values of the nested models in a single table...
+
+```{r}
+model_list <- list(full_model = model_poly_manual, reduced_model = model_sub)
+extract_pvals_simple <- function(model) {
+  coef_table <- summary(model)$coefficients
+ df <- data.frame(
+  Regressor = rownames(coef_table),
+    P_Value = coef_table[, "Pr(>|t|)"]
+  )
+rownames(df) <- NULL
+return(df)
+}
+final_table <- map_dfr(model_list, extract_pvals_simple, .id = "Model")
+final_table %>%
+  # Conditionally format the P-Value column
+  mutate(P_Value_Formatted = ifelse(P_Value < 0.001,
+                                    sprintf("%.3e", P_Value),
+                                    sprintf("%.4f", P_Value))) %>%
+  select(Model, Regressor, P_Value_Formatted) %>%
+  kable(format = "html", 
+        caption = "Model Comparison with P-Values",
+        col.names = c("Model", "Regressor", "P-Value")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  row_spec(which(final_table$Model == "full_model"), 
+           background = "#D9E3F4") %>% 
+  row_spec(which(final_table$Model == "reduced_model"), 
+           background = "#F4EAD9")
+```
+
+...so we see that, as far as the standard stopping rule for for **backward selection** goes, we may stop here (all *p*-values of the reduced model are much smaller that *0.05*).
+Let us additionally run the corresponding ANOVA:
+
+```{r}
+anova(model_sub, model_poly_manual)
+```
+
+Since the *p*-value is high (*~0.43*), the null hypothesis should **not** be rejected so there is no significant difference in the explanatory power of the two models. Therefore, we must switch to the simpler one *model_sub*, thus confirming that *poly(radio, 2)* was not a relevant predictor indeed.
+
+And how this final quadratic model *model_sub* behaves in terms of explanatory/predictive power as compared to the previous linear model *model_partial*?
+
+As for explanation, we may run the corresponding ANOVA...
+
+```{r}
+anova(model_partial,model_sub)
+```
+
+...so the rather small *p*-value confirms that *model_partial* should be rejected indeed (in the presence of quadratic terms).
+
+As for prediction, let us re-fit the quadratic model *model_sub* in a more straightforward manner:
+
+```{r}
+model_sub_shortcut <- lm(sales ~ TV:radio + poly(TV, 2) + poly(radio, 1), 
+                         data = data_adv)
+print_coeffs_with_ci(model_sub_shortcut)
+```
+
+We now may use the function *int_conf_partial* above by just renaming it...
+
+```{r}
+# The new function is essentially identical, just renamed for clarity.
+int_conf_short <- function(new_TV, new_radio, model, conf_level = 0.95) {
+  new_data_point <- data.frame(TV = new_TV, radio = new_radio)
+  confidence_interval <- predict(
+    model, 
+    newdata = new_data_point, 
+    interval = "confidence", 
+    level = conf_level
+  )
+  return(confidence_interval)
+}
+```
+
+...and then compute the confidence interval for the prediction of the **mean response** evaluated at some chosen value for *(TV,radio)*:
+
+
+```{r}
+int_conf_short(new_TV = 150, new_radio = 25 , model = model_sub_shortcut)
+```
+
+Comparing this with the same computation for the strictly linear model *model_partial*
+
+```{r}
+int_conf_partial(new_TV = 150, new_radio = 25 , model = model_partial)
+```
+
+...we see that the introduction of quadratic terms has increased the prediction of *sales* in about *6%*!
+
+Much more ahead, however. Indeed, if we **extrapolate** the prediction range by requiring that *TV+radio=350* and evaluate at some choices of *(TV,radio)* we find that...
+
+
+```{r}
+results_table_quad <- get_confidence_table(new_data = my_new_points, model = model_sub_shortcut)
+print(results_table_quad)
+```
+...so that, differently from what happened with the same computation for the strictly linear model *model_partial*...
+
+```{r}
+print(results_table_s)
+```
+
+...the **mean response** is **not** monotone anymore but instead displays the typical quadratic behavior, thus reaching a **maximum value** somewhere. We may illustrate this by imposing *TV+radio=175*, which lies in a **interpolation range** covered by the data...
+
+
+```{r}
+new_spend <- 175
+TV <- c(25,60,65,70,75,80,85,90,95,100,105,110,115,120,150)
+radio <- new_spend - TV
+my_new_points_short <- data.frame(TV,radio)
+results_table_short <- get_confidence_table(new_data = my_new_points_short, model=model_sub_shortcut)
+print(results_table_short)
+
+```
+
+...to check that, apparently, the maximum for *sales* (on average) is about *20.0* and takes place somewhere around *(TV,radio)=(85,90)*. 
+
+We may complement this rather satisfactory analysis in many ways:
+
+  - we may estimate the **response** itself for prescribed values of *TV+radio* (by taking *TV+radio=175* we expect to find confidence intervals much wider than those in the previous table);
+  
+  - we may insert **higher order** terms in the regression model, starting with those of third order, and check whether or not the resulting model, after being submitted to **backward selection**, is more significant than the quadratic one previously considered;
+  
+  - we may then repeat the whole predictive analysis for such higher order models to see what happens;
+  
+  - finally, delving deeper into the suggestions in [@james2013introduction, chap. 7], we may dispense altogether with monomials (or their orthogonal transforms) as regressors by adopting more flexible basis functions (piecewise polynomials, splines, etc.)...
+  
+...but we will stop here. 
+
+#### References
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

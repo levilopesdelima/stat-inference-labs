@@ -1,0 +1,5 @@
+"0","# Add the point estimate (the coefficients) on top"
+"0","points(point_estimate[1], point_estimate[2], "
+"0","       pch = 19,         # Solid circle"
+"0","       cex = 1.5,        # Make it slightly larger"
+"0","       col = ""black"")"

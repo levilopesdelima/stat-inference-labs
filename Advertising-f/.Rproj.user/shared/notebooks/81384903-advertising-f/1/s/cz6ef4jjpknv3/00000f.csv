@@ -1,0 +1,7 @@
+"0","# Plot the long data in histograms"
+"0","ggplot(data_long, aes(x = value, fill = media_type)) +"
+"0","  geom_histogram(binwidth = 10,alpha = 0.5) + "
+"0","  labs(title = ""Histogram of Spending per Media (with Total Value)"","
+"0","       x = ""Value"","
+"0","       y = ""Frequency (Count)"","
+"0","       fill = ""Media Type"")"

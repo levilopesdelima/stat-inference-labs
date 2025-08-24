@@ -1,0 +1,205 @@
+
+---
+title: "Johnson-Lindenstrauss Lemma"
+author: "Levi Lopes de Lima"
+date: "2025-08-07"
+output: 
+    html_document: default
+link-citations: yes
+bibliography: "feyn-notes.bib"
+---
+
+
+#### Explaining the lab
+
+We will present below an illustrative simulation of the **Johnson-Lindenstrauss Lemma**, which turns out to be a cornerstone of high-dimensional probability and computer science, celebrated for its powerful and counter-intuitive result about dimensionality reduction. Since no complicated algorithm is required to find the "best" projection implementing the data reduction, as a simple random projection certainly works with very high probability, the lemma turns out to be not just a theoretical curiosity but a practical and efficient tool with many applications in various real-world scenarios such as:
+
+  - **Machine Learning**, where it speeds algorithms whose implementation and efficiency rely on evaluating **euclidean** distances (such as *k-Nearest Neighbors (k-NN)* and *support vector machines*,  among others).
+  - **Data Streaming**, where it helps processing massive datasets not quite fitting into the available memory by still maintaining a low-dimensional "sketch" of the data.
+  - **Compressed Sensing**, where it plays a key role in recovering sparse signals from a small number of measurements.
+
+All the math needed to understand the simulation may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes").
+
+#### A glimpse at the theory
+
+Let us recall the precise statement of the Johnson-Lindenstrauss Lemma, which says: if  $\mathcal C=\{x_1,\cdots,x_n\}\subset\mathbb R^d$ is a collection of $n$ points then, given $\epsilon, \delta\in(0,1)$, there exist $m= O(\epsilon^{-2}\log (n/\delta))$ and a map $F:\mathbb R^d\to\mathbb R^k$ such that
+	\[
+		1-\epsilon\leq \frac{\|F(x_i)-F(x_j)\|^2}{\|x_i-x_j\|^2}\leq 1+\epsilon,  		
+	\]
+	for all $x_i\neq x_j$ in $\mathcal C$. 
+	
+Regarding this result, we make the following comments:	
+
+  - In applications to Data Science [@vershynin2018high],[@blum2020foundations], the number $n$ of **samples** is much smaller than the number $d$ of **features**.
+  - The remarkable aspect of the lemma is that if we allow for a controlled distortion $\epsilon>0$ on the ``approximate projection'' $F$, $\mathcal C$ has a sort of **intrinsic dimension** $k$ which scales as $\log n$ and happens to be completely insensitive to the ambient dimension $d$, which might even be infinite. This means that there exists a subset $\mathcal I\subset \{1,\cdots,p\}$ of indexes with $\sharp \mathcal I=d-k$ such that $y_j=0$ for all $y\in F(\mathcal C)$ and $j\in\mathcal I$. In other words, up to an overall distortion measured by $\epsilon$, $k=C\epsilon^{-2}\log n$, for some $C>0$,  turns out to be the number of relevant (nonzero) features of the elements of $\mathcal C$, hence the importance of the result for data reduction.
+  - Although the lemma's statement is deterministic in nature, its standard proof  [@delima2025probab, chap. 5] employs the **probabilistic method**, which roughly consists of upgrading the assertion we intend to prove (the purely deterministic statement involving the ``approximate projection'' $F$)  to a random event (by turning $F$ into a random matrix) and then checking that the associated random event occurs with **positive** probability. 
+
+#### Loading the packages
+
+```{r}
+library(ggplot2)
+library(htmltools)
+```
+
+
+#### Starting the simulation
+
+In order to run a simulation for the Johnson-Lindenstrauss Lemma, we construct a function which generates high-dimensional data (in dimension $d$), projects it down to a lower
+dimension $k$ (by means of random $k\times d$-matrix whose entries follow independent standard normals), and calculates the preservation of pairwise distances. We will provide the appropriate parameters
+
+  - the number of points $n$;
+  - the original high dimension $d$;
+  - the error tolerance $\epsilon$ (between 0 and 1);
+  - a numerical constant $C$ involved in the calculation of $k$;
+  - the seed integer, for reproducibility,
+
+and the simulation will return 
+ 
+  -  A printable list containing the simulation results: the chosen initial parameters, the value of $k$ and the distance preservation percentage (in brief, a summary);
+  - a ``ggplot`` object from which the actual plot can be extracted
+   
+
+
+
+
+```{r}
+run_jl_simulation <- function(n, d, epsilon = 0.2, C = 15, seed = 42) {
+  set.seed(seed)
+  k <- ceiling(C * log(n) / epsilon^2)
+  if (k >= d) {
+    stop(sprintf(
+      "Simulation stopped. The required dimension k=%d is not less than the original dimension d=%d. \nTry increasing d or n, or increasing epsilon.",
+      k, d
+    ))
+  }
+  X_original <- matrix(rnorm(n * d), nrow = n, ncol = d)
+  projection_matrix <- matrix(rnorm(k * d), nrow = k, ncol = d)
+  X_projected <- (X_original %*% t(projection_matrix)) * (1 / sqrt(k))
+  dist_orig_sq <- as.matrix(dist(X_original)^2)
+  dist_proj_sq <- as.matrix(dist(X_projected)^2)
+  original_dists_vec <- dist_orig_sq[upper.tri(dist_orig_sq)]
+  projected_dists_vec <- dist_proj_sq[upper.tri(dist_proj_sq)]
+  ratios <- projected_dists_vec[original_dists_vec > 1e-9] / original_dists_vec[original_dists_vec > 1e-9]
+  lower_bound <- 1 - epsilon
+  upper_bound <- 1 + epsilon
+  preservation_pct <- 100 * sum(ratios >= lower_bound & ratios <= upper_bound) / length(ratios)
+  plot_data <- data.frame(ratio = ratios)
+  jl_plot <- ggplot(plot_data, aes(x = ratio)) +
+    geom_histogram(bins = 50, fill = "steelblue", color = "black", alpha = 0.8) +
+    geom_vline(xintercept = c(lower_bound, upper_bound), color = "red", linetype = "dashed", linewidth = 1) +
+    labs(
+      title = "Distribution of Distance Ratios After Projection",
+      subtitle = sprintf("n=%d, d=%d -> k=%d. Preservation: %.2f%%", n, d, k, preservation_pct),
+      x = "Ratio of Squared Distances (Projected / Original)", y = "Count"
+    ) + theme_minimal()
+  return(list(
+    params = list(n = n, d = d, epsilon = epsilon, C = C),
+    k = k,
+    preservation_percentage = preservation_pct,
+    plot = jl_plot
+  ))
+}
+# Defines the colors
+jl_summary_colors <- c(
+  params = "#e6f0ff",       
+  reduction = "#fffacd",    
+  verification = "#f0fff0" 
+)
+
+# This is the summary function
+summarize_jl_results <- function(jl_results) {
+  create_colored_block <- function(full_text, color) {
+    sprintf(
+      '<div style="background-color: %s; border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin-bottom: 10px;"><pre style="font-size: 1em; margin: 0;">%s</pre></div>',
+      color,
+      htmltools::htmlEscape(full_text)
+    )
+  }
+  
+  # This provides the text content for each block 
+  
+  # Block 1: Parameters
+  params_text <- paste(
+    "--- Simulation Parameters ---",
+    paste("Number of points (n):", jl_results$params$n),
+    paste("Original dimension (d):", jl_results$params$d),
+    paste("Error tolerance (epsilon):", jl_results$params$epsilon),
+    paste("k-specifying constant (C):", jl_results$params$C),
+    sep = "\n"
+  )
+  
+  # Block 2: Reduction
+  reduction_text <- paste(
+    "--- Dimensionality Reduction ---",
+    paste("Required lower dimension (k):", jl_results$k),
+    sprintf("Reduction factor: %.2f-fold", jl_results$params$d / jl_results$k),
+    sep = "\n"
+  )
+  
+  # Block 3: Verification
+  verification_text <- paste(
+    "--- Verification of the JL Lemma ---",
+    sprintf("Percentage of pairs preserved: %.2f%%", jl_results$preservation_percentage),
+    sep = "\n"
+  )
+  
+  # Convert each text block into a colored HTML block
+  html_block1 <- create_colored_block(params_text, jl_summary_colors["params"])
+  html_block2 <- create_colored_block(reduction_text, jl_summary_colors["reduction"])
+  html_block3 <- create_colored_block(verification_text, jl_summary_colors["verification"])
+  
+  # Combine and print the final html
+  final_html <- paste(html_block1, html_block2, html_block3, sep = "\n")
+  
+  knitr::asis_output(final_html)
+}
+```
+
+
+
+We may now run the simulation with specified parameters and print the summary with the aimed results.
+
+
+```{r, results='asis'}
+jl_results <- run_jl_simulation(n = 200, d = 20000)
+summarize_jl_results(jl_results)
+```
+
+
+
+
+Note that we prescribed $(n,d)=(200,20000)$ while keeping the remaining parameter vector $(\epsilon,C)=(0.2,15)$ as in default. In any case, 
+we may now view the pertinent plot in order to visually confirm the $100.00\%$ of distance preservation between the set of projected pair of points.
+
+```{r}
+print(jl_results$plot)
+```
+
+We thus see that the distribution of distance ratios (after projection) remains entirely within the prescribed interval $[0.8,1.2]$, thus confirming JL.
+
+We may now try other choices for the parameter $\epsilon$, the error tolerance, say by shrinking it a bit...
+
+```{r, results='asis'}
+jl_results <- run_jl_simulation(n = 200, d = 20000, epsilon=0.15)
+summarize_jl_results(jl_results)
+print(jl_results$plot)
+```
+
+...which again confirms JL.
+
+We may instead substantially decrease $C$ to see what happens:
+
+
+```{r, results='asis'}
+jl_results <- run_jl_simulation(n = 200, d = 20000, C=5)
+summarize_jl_results(jl_results)
+print(jl_results$plot)
+```
+
+
+Since $C$ directly affects $k$, we see that by substantially reducing the projected dimension (from $k=1987$ to $k=663$) the distance ratios of a certain (albeit tiny) fraction of projected pairs (about $0.05\%$) fall **outside** the prescribed interval [0.8,1.2]. This clearly shows that the crucial input in determining the projected dimension $k$ is the term $\epsilon^{-2}\log n$, with $C$ being merely an adjusting factor.
+
+Needless to say, you may keep playing around with other values for the input parameters but you should be aware that your computational power may easily fail if $d$ is chosen large enough. So go ahead at your own risk...
+
+#### References
+ 

@@ -1,0 +1,8 @@
+"0","# Add a legend to explain the colors"
+"0","legend(""topright"", "
+"0","       legend = c(""Joint Confidence Region (Ellipse)"", ""Individual CIs (Rectangle)"", ""Point Estimate""),"
+"0","       fill = c(rgb(0, 0, 1, alpha = 0.3), rgb(1, 0, 0, alpha = 0.3), NA),"
+"0","       border = c(""blue"", ""red"", NA),"
+"0","       pch = c(NA, NA, 19),"
+"0","       col = c(NA, NA, ""black""),"
+"0","       bty = ""n"") # No box around the legend"

@@ -1,0 +1,606 @@
+---
+title: "Maximum Likelihood estimation for a Gamma population"
+author: "Levi Lopes de Lima"
+date: "2025-08-09"
+output: 
+    html_document: default
+link-citations: yes
+bibliography: "feyn-notes.bib"
+---
+
+
+#### Explaining the lab
+
+We will present below an illustrative simulation of Maximum Likelihood Estimation, as applied to a population following a Gamma distribution. The simulation is organized as follows:
+
+
+  - We start with a Gamma distribution whose shape and rate are know (say, shape $\lambda= 2.0$ and  rate $\alpha= 0.5$), but having in mind that these parameters could be eventually changed in another simulation.
+  - A simulation is performed of a random sample of the given distribution (say, with $n=50$ samples), but again having in mind that $n$ can be changed in a subsequent simulation;
+  -  A standard optimization scheme (say, ``optim()``) is employed to numerically find the ML estimator $(\widehat\lambda,\widehat\alpha)$;
+  -  We rely on asymptotic normality (with the asymptotic variance given by the inverse of Fisher information matrix) in order to construct large sample confidence intervals for the unknown parameters;
+  - We then compare this latter, data driven, result with the known values of the parameter (in our case,  $\lambda=2.0$ and $\alpha=0.5$).
+  
+We mention that one of the reasons why we have chosen a Gamma population to start with has to do with the third item above, since the corresponding Maximum Likelihood (ML) estimator is not solvable in closed form, so we need to numerically solve for it, which adds an extra layer of difficulty to the simulation.   
+
+All the math needed to understand the simulation may be found in [@delima2025probab]. 
+
+#### A glimpse at the theory
+
+Let us start with a **statistical model**, that is, a  list $\{X_j\}_{j=1}^n$ of **i.i.d.** random variables with $X_j\sim \psi_{\theta}(x_j)>0$, where  $\theta\in\Theta\subset \mathbb R^p$ is the unknown vector parameter that we intend to estimate. The corresponding **likelihood function** is the joint distribution of the associated random vector $X=(X_1,\cdots,X_n)\in\mathbb R^n$, which is 
+\[
+	L({\bf x};\theta)=\Pi_{j=1}^n\psi_\theta(x_j),
+\]
+	where  ${\bf x}=(x_1,\cdots,x_n)\in\mathbb R^n$ is a **realization** of $X$.
+
+To any such model we may attach a natural **estimator** for $\theta$, namely, \[
+		\widehat\theta={\rm argmax}_{\theta\in\Theta} L({\bf x};\theta).
+	\]
+	Equivalently,
+	\[
+		\widehat\theta={\rm argmax}_{\theta\in\Theta} l({\bf x};\theta).
+	\]
+	where 
+	\[
+		l({\bf x};\theta)=\ln L({\bf x};\theta)
+	\]
+	is the **log-likelihood function**. This is usually termed the **maximum likelihood** (ML) estimator, which distinguishes itself by having remarkable  asymptotic properties.
+	
+In order to explain this latter point, let us consider the
+**score vector** (of the given sample $X$),
+	\[
+	s(X;\theta)=\nabla_\theta l(X;\theta),
+	\]
+and the corresponding **Fisher information matrix**  
+	\[
+		\mathscr F_{(n)}(\theta)={\rm cov}(s(X;\theta))=-\mathbb E(\nabla_{\theta\theta} s(X;\theta)), 
+	\]
+a symmetric $p\times p$ which we assume to be **positive definite** everywhere. Then the main result in the theory says that, under suitable regularity assumptions, the ML estimator $\widehat\theta_n$ is **asymptotically normal** in the sense that
+\[
+\sqrt{n}(\widehat\theta_n- \theta)\to\mathcal N(0,\mathscr F_{(1)}(\theta)^{-1}),
+\]
+where $\mathscr F_{(1)}(\theta)=\mathscr F_{(n)}(\theta)/n$ is the **Fisher matrix information** of a single observation. In particular, there holds the asymptotic relation 
+\[
+	\widehat\theta_n\approx_{n\to+\infty}\mathcal N(\theta,\mathscr F_{(n)}(\theta)^{-1}).
+\]
+Before proceeding we remark  that the covariance matrix $\mathscr F_{(1)}(\theta)^{-1}$ of $\sqrt{n}(\widehat\theta_n- \theta)$ displayed above is at least as small as the covariance matrix of any (sufficiently regular but not necessarily asymptotically normal) unbiased estimator for $\theta$, which is a consequence of the celebrated **Cramér-Rao** lower bound. This remarkable property of $\widehat\theta_n$ is usually called **asymptotic efficiency** and in a sense justifies the widespread use of this estimator.
+
+When combined with the well-known **consistency** of $\widehat\theta_n$, the asymptotic relation above yields 
+\[
+	\widehat\theta_n\approx_{n\to+\infty}\mathcal N(\theta,\mathscr F_{(n)}(\widehat\theta_n)^{-1}), 
+\]
+from which we can easily provide large sample confidence intervals for each entry of the vector parameter $\theta$ (by taking the square roots of the corresponding diagonal elements of the asymptotic variance matrix as a measure of the the spread). In case, these entries are correlated (which is means that $\mathscr F_{(n)}(\widehat\theta_n)^{-1}$ fails to be diagonal), it is perhaps preferable to construct confidence regions for the whole vector parameter $\theta$, which can be carried out as follows. 
+We write $\mathscr F_{(n)}(\widehat\theta_n)=A^tA$ so as to have 
+\[
+A(\widehat\theta_n-\theta)\sim\mathcal N(0,{\rm Id}_p)
+\]
+and hence 
+\[
+(\widehat\theta_n-\theta)^t\mathscr F_{(n)}(\widehat\theta_n)(\widehat\theta_n-\theta)
+=\|A(\widehat\theta_n-\theta)\|^2\sim\chi^2_p.
+\]
+In other words, the quadratic form in the left-hand side is a pivotal quantity to which the standard method may be applied: if $\chi^2_{p,\alpha}$ is the **quantile** of $\chi^2_p$ associated to $0<\alpha<1$ then 
+\[
+P\left(
+(\widehat\theta_n-\theta)^t\mathscr F_{(n)}(\widehat\theta_n)(\widehat\theta_n-\theta)\leq \chi^2_{p,\alpha}\right)\approx 1-\alpha. 
+\]
+Since $\mathscr F_{(n)}(\widehat\theta_n)$ is positive definite, the random confidence region where $\theta$ is supposed to lie (within the given confidence level) is **ellipsoidal** in nature, with its size, shape, and orientation being completely determined by the totality of the elements of $\mathscr F_{(n)}(\widehat\theta_n)$. Moreover, since its construction takes into account the possible correlations among the various components of $\widehat\theta_n$, as encoded in the off-diagonal elements of the asymptotic covariance matrix $\mathscr F_{(n)}(\widehat\theta_n)^{-1}$, in such cases it certainly encloses a much tighter volume than the $p$-cube which is the product of the separate confidence intervals for the entries of $\theta$. 
+
+We illustrate the asymptotic theory above for the case in which $\theta=(\lambda,\alpha)$, the **shape-rate** parameter of a **Gamma distribution**
+\[
+\psi(x;\theta)=	\Gamma_{\lambda,\alpha}(x)=\frac{\alpha^\lambda}{\Gamma(\lambda)}x^{\lambda-1}e^{-\alpha x}{\bf 1}_{(0,+\infty)}(x), \quad x\in\mathbb R.
+\]
+We recall that if $Y\sim\Gamma_{\lambda,\alpha}$ then 
+\[
+\mathbb E(Y)=\frac{\lambda}{\alpha},\quad {\rm var}(Y)=\frac{\lambda}{\alpha^2},
+\]
+so that the parameters may be expressed in terms of the first and second centered moments:
+\[
+\lambda=\frac{\mathbb E(Y)^2}{{\rm var}(Y)}, \quad \alpha=\frac{\mathbb E(Y)}{{\rm var}(Y)}.
+\]
+Also, the log-likelihood function  is 
+\[
+l({\bf x};\theta)=n\left(\lambda\ln\alpha-\ln\Gamma(\lambda)+(\lambda-1)\overline{\ln x}-\alpha\overline{x}\right), 
+\]
+where $\overline{\ln x}$ is the mean of $(\ln x_1,\cdots,\ln x_n)$; recall that $x_j>0$ for each $j$. Hence, the score vector is
+\[
+s({\bf x};\theta)=n
+\left(
+\begin{array}{c}
+\ln\alpha - \psi(\lambda)+\overline{\ln x}	\\
+\frac{\lambda}{\alpha}-\overline x
+	\end{array}
+\right),\quad \psi(\lambda)=\frac{d}{d\lambda}\ln\Gamma(\lambda), 
+\]
+so the ML estimator $\widehat\theta=(\widehat\lambda,\widehat\alpha)$ satisfies
+\[
+\left\{
+\begin{array}{rcl}
+\psi(\widehat\lambda)-\ln\widehat\alpha & = & \overline{\ln x}\\	
+\frac{\widehat\lambda}{\widehat\alpha}& = & \overline x
+	\end{array}
+\right.
+\]
+Note that trying to find a solution for this system in closed form is out of question so a possible strategy here (which we adopt below) is simply to forget about the system and use our favorite optimization package to find $\widehat\theta$.
+In any case, 
+with the ML estimator so determined, we may proceed to compute the associated Fisher information matrix: 
+\[
+\mathscr F_{(n)}(\theta)=n
+\left(
+\begin{array}{cc}
+\psi_1(\lambda) 	& -1/\alpha\\
+-1/\alpha &  \lambda/\alpha^2
+	\end{array}
+\right)=n\mathscr F_{(1)}(\theta), \quad \psi_1=d\psi/d\lambda.
+\]
+It is not hard to check that
+ $\det \mathscr F_{(1)}(\theta)=(\lambda\psi_1(\lambda)-1)/\alpha^2>0$, so  we we finally obtain asymptotic normality for $\widehat\theta_n$:
+\[
+\sqrt{n}
+\left(
+\left(
+\begin{array}{c}
+\widehat\lambda_n\\
+	\widehat\alpha_n
+	\end{array}
+\right)
+-
+\left(
+\begin{array}{c}
+	\lambda\\
+	\alpha
+\end{array}	
+\right)
+\right)
+\stackrel{d}{\to}
+\mathcal N\left(\vec{0},\mathscr F_{(1)}(\theta)^{-1}\right)
+=
+\mathcal N
+\left(
+\left(
+\begin{array}{c}
+	0\\
+	0
+\end{array}
+\right),
+\frac{1}{\lambda \psi_1(\lambda)-1}
+\left(
+\begin{array}{cc}
+\lambda	 & \alpha\\
+	\alpha & \alpha^2\psi_1(\lambda)
+	\end{array}
+\right)
+\right).
+\]
+As explained above, we may combine this with consistency in order to obtain
+\[
+\left(
+\begin{array}{c}
+\widehat\lambda_n\\
+	\widehat\alpha_n
+\end{array}
+\right)\approx_{n\to +\infty}
+\mathcal N\left(
+\left(
+\begin{array}{c}
+	\lambda\\
+	\alpha
+	\end{array}
+\right)
+,\mathscr F_{(n)}(\widehat\theta_n)^{-1}\right)
+=
+\mathcal N
+\left(
+\left(
+\begin{array}{c}
+	\lambda\\
+	\alpha
+\end{array}
+\right),
+\frac{1}{n(\widehat\lambda_n \psi_1(\widehat\lambda_n)-1)}
+\left(
+\begin{array}{cc}
+\widehat\lambda_n	 & \widehat\alpha_n\\
+	\widehat\alpha_n & \widehat\alpha_n^2\psi_1(\widehat\lambda_n)   
+\end{array}
+\right)
+\right),
+\]
+from which large sample confidence intervals (and regions)
+may be constructed.
+
+
+
+
+
+
+
+	
+	
+
+
+##### Loading the packages
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(ellipse)
+```
+
+
+
+#### Starting the simulation
+
+Here we start the simulation proper. We first run it for specific choices for the parameters of the underlying Gamma distribution, $(\alpha,\lambda)=(0.5,2)$, and sample size, $n=50$. Thus, we draw a sample from  $\Gamma_{0.5,2}$ and then plot the corresponding histogram (in blue) against the true distribution (in red).
+
+```{r}
+
+true_shape <- 2.0
+true_rate <- 0.5  
+n <- 50
+
+set.seed(123) 
+
+# Simulating a random sample
+sim_data <- rgamma(n, shape = true_shape, rate = true_rate)
+
+# Creating a data frame
+plot_df <- data.frame(value = sim_data)
+
+# Creating the plot
+ggplot(plot_df, aes(x = value)) +
+  geom_histogram(aes(y = after_stat(density)), 
+                 bins = 15, fill = "lightblue", color = "black", alpha = 0.8) +
+  stat_function(fun = dgamma, 
+                args = list(shape = true_shape, rate = true_rate),
+                color = "darkred", linewidth = 1.2) +
+  labs(
+    title = "Histogram of Simulated Data vs. True Density",
+    subtitle = sprintf("Sample (n=%d) from a Gamma(shape=%.1f, rate=%.1f) distribution", n, true_shape, true_rate),
+    x = "Simulated Value",
+    y = "Density"
+  ) +
+  theme_minimal()
+```
+
+
+We now prepare for the optimization, taking into account that since we are going to use ``optim()``, which minimizes by default, the objective function should be **minus** the log-likelihood. Precisely, we seek for 
+\[
+\widehat\theta={\rm argmin}_\theta -l({\bf x};\theta). 
+\]
+
+
+```{r}
+neg_log_likelihood_rate <- function(params, data) {
+  # Just to check whether the parameters are  positive
+  if (params[1] <= 0 || params[2] <= 0) return(Inf)
+  
+  shape_param <- params[1]
+  rate_param <- params[2]
+  
+  # Calculate the log-likelihood using the shape/rate
+  ll <- dgamma(data, shape = shape_param, rate = rate_param, log = TRUE)
+   -sum(ll)
+}
+```
+
+
+The minimization procedure requires starting values, which we take to be the sampling correspondents of the expression above giving the true parameters in terms of the moments:
+
+```{r}
+
+sample_mean <- mean(sim_data)
+sample_var <- var(sim_data)
+
+# this are the  sample correspondents of the expressions above giving the parameters in terms of the moments
+start_shape <- sample_mean^2 / sample_var
+start_rate <- sample_mean / sample_var
+
+start_params <- c(start_shape, start_rate)
+
+# Perform the optimization
+mle_optim_rate <- optim(
+  par = start_params,
+  fn = neg_log_likelihood_rate,
+  data = sim_data,
+  hessian = TRUE
+)
+
+# Extract the ML estimates
+mle_params_rate <- mle_optim_rate$par
+names(mle_params_rate) <- c("Shape (lambda)", "Rate (alpha)")
+```
+
+
+We may now extract the ML estimates.
+
+```{r}
+print(mle_params_rate)
+```
+
+The optimization above provides ``hessian``, which is nothing but the estimated Fisher matrix, so we must invert it in order to get the estimated covariance matrix.
+
+
+```{r}
+# invert hessian
+var_cov_matrix_rate <- solve(mle_optim_rate$hessian)
+print(var_cov_matrix_rate)
+```
+We may directly calculate the **tilting angle** $\theta$ of the corresponding ellipses (the level curves of the associated quadratic form) by means of the usual formula...
+
+
+
+
+```{r}
+theta <- atan(2*var_cov_matrix_rate[1,2]/(var_cov_matrix_rate[1,1]-var_cov_matrix_rate[2,2]
+                                             ))/2
+print(theta) 
+```
+
+...thus getting a non-vanishing result. In particular, this indicates **correlation** between $\widehat\lambda_n$ and $\widehat\alpha_n$. 
+
+In any case, taking square roots of the diagonal elements gives the standard errors of the parameters...
+
+```{r}
+std_errors_rate <- sqrt(diag(var_cov_matrix_rate))
+names(std_errors_rate) <- c("SE_Shape", "SE_Rate")
+print(std_errors_rate)
+```
+
+
+...from which $95\%$ confidence intervals (for each parameter) can be easily constructed:
+
+```{r}
+z_critical <- qnorm(0.975)
+ci_shape_rate <- mle_params_rate[1] + c(-1, 1) * z_critical * std_errors_rate[1]
+ci_rate <- mle_params_rate[2] + c(-1, 1) * z_critical * std_errors_rate[2]
+```
+
+These intervals may either be directly extracted...
+
+```{r}
+cat("\n95% Confidence Interval for Shape:\n"); print(ci_shape_rate)
+cat("\n95% Confidence Interval for Rate:\n"); print(ci_rate)
+```
+
+...or we may provide the whole summary in a table:
+
+
+```{r}
+
+results_summary_rate <- data.frame(
+  Parameter = c("Shape (lambda)", "Rate (alpha)"),
+  True_Value = c(true_shape, true_rate),
+  MLE_Estimate = mle_params_rate,
+  CI_Lower_Bound = c(ci_shape_rate[1], ci_rate[1]),
+  CI_Upper_Bound = c(ci_shape_rate[2], ci_rate[2])
+)
+
+table_caption_rate <- sprintf("Comparison of True Parameters with ML Estimates and 95%% CIs (n = %d)", n)
+kable(results_summary_rate, digits = 4, caption = table_caption_rate)
+```
+
+We may now play around a bit by choosing other values for the true parameters ($\lambda$, $\alpha$ and $n$). We can do this either by replacing these values in the first code chunk above and running the whole sequence of chunks or by wrapping the whole content of the chunks in a single function, say ``run_gamma_mle_simulation_rate()``, which is the route we shall take.
+
+```{r}
+run_gamma_mle_simulation_rate <- function(true_shape, true_rate, n, conf_level = 0.95, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  sim_data <- rgamma(n, shape = true_shape, rate = true_rate)
+  
+  neg_log_likelihood <- function(params, data) {
+    if (params[1] <= 0 || params[2] <= 0) return(Inf)
+    -sum(dgamma(data, shape = params[1], rate = params[2], log = TRUE))
+  }
+  
+  sample_mean <- mean(sim_data)
+  sample_var <- var(sim_data)
+  if (sample_var <= 0) return(kable(data.frame(Error = "Sample variance is not positive.")))
+  
+  start_shape <- sample_mean^2 / sample_var
+  start_rate <- sample_mean / sample_var
+  
+  mle_optim <- optim(par = c(start_shape, start_rate), fn = neg_log_likelihood, data = sim_data, hessian = TRUE)
+  if (mle_optim$convergence != 0) warning("Optimization may not have converged.")
+  
+  mle_params <- mle_optim$par
+  var_cov_matrix <- try(solve(mle_optim$hessian), silent = TRUE)
+  if (inherits(var_cov_matrix, "try-error")) return(kable(data.frame(Error = "Hessian not invertible.")))
+  
+  std_errors <- sqrt(diag(var_cov_matrix))
+  z_critical <- qnorm(1 - (1 - conf_level) / 2)
+  ci_shape <- mle_params[1] + c(-1, 1) * z_critical * std_errors[1]
+  ci_rate <- mle_params[2] + c(-1, 1) * z_critical * std_errors[2]
+  
+  results_summary <- data.frame(
+    Parameter = c("Shape (lambda)", "Rate (alpha)"),
+    True_Value = c(true_shape, true_rate),
+    MLE_Estimate = mle_params,
+    CI_Lower_Bound = c(ci_shape[1], ci_rate[1]),
+    CI_Upper_Bound = c(ci_shape[2], ci_rate[2])
+  )
+  
+  table_caption <- sprintf("Gamma ML Estimation (Shape-Rate): n=%d, CIs at %.0f%%", n, conf_level * 100)
+  kable(results_summary, digits = 4, caption = table_caption)
+}
+```
+
+Just to make sure that both approaches give the same result, let us run the previous simulation with this new wrapping function...
+
+```{r}
+run_gamma_mle_simulation_rate(true_shape = 2.0, true_rate = 0.5, n = 50, seed = 123)
+```
+...which perfectly matches the previous table.
+
+Now, another simulation:
+
+```{r}
+run_gamma_mle_simulation_rate(true_shape = 5, true_rate = 2, n = 200, seed = 101)
+```
+
+
+The summary tables above display the CIs for the parameters separately and does not take into account the fact that the ML estimators are **correlated** (as we have seen, the inverse Fisher matrix fails to be diagonal). Thus, it seems sensible to make use of the whole variance-covariance matrix to construct and display an **ellipsoidal** joint confidence region where the unknown  parameter is supposed to lie (with a given confidence level). In this same plot it would be desirable to have horizontal and vertical dashed lines indicating the endpoints of the individual confidence intervals  already calculated. 
+
+We will now create the corresponding code in two parts. First, we create a new function, ``plot_confidence_region_rate()``, which takes the results of an optimization and plots the joint confidence ellipse. It  calculates the coordinates of the confidence ellipse based on the MLEs and the covariance matrix and then uses ``ggplot2`` to draw the ellipse, the MLE point, the true parameter point, and the individual confidence intervals (which form a rectangle).
+
+
+
+```{r}
+
+plot_confidence_region_rate <- function(mle_optim, true_params, conf_level = 0.95) {
+  mle_params <- mle_optim$par
+  var_cov_matrix <- solve(mle_optim$hessian)
+  
+  conf_ellipse_coords <- as.data.frame(
+    ellipse::ellipse(x = var_cov_matrix, centre = mle_params, level = conf_level)
+  )
+  colnames(conf_ellipse_coords) <- c("shape", "rate")
+  
+  std_errors <- sqrt(diag(var_cov_matrix))
+  z_critical <- qnorm(1 - (1 - conf_level) / 2)
+  ci_shape <- mle_params[1] + c(-1, 1) * z_critical * std_errors[1]
+  ci_rate <- mle_params[2] + c(-1, 1) * z_critical * std_errors[2]
+  
+  points_df <- data.frame(
+    Parameter_Set = factor(c("MLE", "True Value"), levels = c("MLE", "True Value")),
+    shape = c(mle_params[1], true_params[1]),
+    rate = c(mle_params[2], true_params[2])
+  )
+
+  p <- ggplot(conf_ellipse_coords, aes(x = shape, y = rate)) +
+    annotate("rect", xmin = ci_shape[1], xmax = ci_shape[2], 
+             ymin = ci_rate[1], ymax = ci_rate[2],
+             fill = "lightcoral", alpha = 0.2) +
+    geom_path(color = "darkblue", linewidth = 1) +
+    geom_point(data = points_df, aes(color = Parameter_Set, shape = Parameter_Set), size = 4, stroke = 1.5) +
+    geom_hline(yintercept = ci_rate, linetype = "dashed", color = "gray40") +
+    geom_vline(xintercept = ci_shape, linetype = "dashed", color = "gray40") +
+    scale_color_manual(name = "Points", values = c("MLE" = "red", "True Value" = "black")) +
+    scale_shape_manual(name = "Points", values = c("MLE" = 4, "True Value" = 3)) +
+    labs(
+      title = "Joint Confidence Region (Shape vs. Rate)",
+      subtitle = sprintf("The blue ellipse is the joint %.0f%% CI. The red box uses individual CIs.", conf_level*100),
+      x = "Shape Parameter", y = "Rate Parameter"
+    ) +
+    theme_bw() + coord_equal()
+  
+  return(p)
+}
+```
+
+
+With ``plot_confidence_region_rate()`` at hand, we may now pass to the next step, which first uses a slightly modified version of the previous wrapping function ``run_gamma_mle_simulation_rate()`` to get all the necessary outputs... 
+
+
+```{r}
+run_gamma_mle_simulation_adv_rate <- function(true_shape, true_rate, n, conf_level = 0.95, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  sim_data <- rgamma(n, shape = true_shape, rate = true_rate)
+  neg_log_likelihood <- function(params, data) {
+    if (params[1] <= 0 || params[2] <= 0) return(Inf)
+    -sum(dgamma(data, shape = params[1], rate = params[2], log = TRUE))
+  }
+  sample_mean <- mean(sim_data)
+  sample_var <- var(sim_data)
+  if (sample_var <= 0) stop("Sample variance is not positive.")
+  start_shape <- sample_mean^2 / sample_var
+  start_rate <- sample_mean / sample_var
+  mle_optim <- optim(par = c(start_shape, start_rate), fn = neg_log_likelihood, data = sim_data, hessian = TRUE)
+  return(list(mle_optim = mle_optim, true_params = c(true_shape, true_rate), conf_level = conf_level, n = n))
+}
+
+
+```
+
+...and then, after running the appropriate simulation, feeds the results into the new plotting function.
+
+```{r}
+
+simulation_results_rate <- run_gamma_mle_simulation_adv_rate(
+  true_shape = 2, 
+  true_rate = 0.5, 
+  n = 50, 
+  seed = 123
+)
+plot_confidence_region_rate(
+  mle_optim = simulation_results_rate$mle_optim,
+  true_params = simulation_results_rate$true_params,
+  conf_level = simulation_results_rate$conf_level
+)
+```
+
+We see that the true parameter lies within the rectangle, but not quite within the ellipse, which certainly indicates that the sample size has not been taken large enough. For completeness, we recall the corresponding summary table below.  
+
+```{r}
+run_gamma_mle_simulation_rate(true_shape = 2.0, true_rate = 0.5, n = 50, seed = 123)
+```
+
+Let us substantially increase the sample size (to $n=150$). First the plot...
+
+```{r}
+simulation_results_rate <- run_gamma_mle_simulation_adv_rate(
+  true_shape = 2, 
+  true_rate = 0.5, 
+  n = 150, 
+  seed = 125
+)
+plot_confidence_region_rate(
+  mle_optim = simulation_results_rate$mle_optim,
+  true_params = simulation_results_rate$true_params,
+  conf_level = simulation_results_rate$conf_level
+)
+```
+
+and then the numerical summary:
+
+```{r}
+run_gamma_mle_simulation_rate(true_shape = 2.0, true_rate = 0.5, n = 150, seed = 125)
+```
+
+Thus, everything seems to be working fine now.
+
+Let us now re-run our second simulation above...
+
+
+```{r}
+simulation_results_rate <- run_gamma_mle_simulation_adv_rate(
+  true_shape = 5, 
+  true_rate = 2, 
+  n = 200, 
+  seed = 101
+)
+plot_confidence_region_rate(
+  mle_optim = simulation_results_rate$mle_optim,
+  true_params = simulation_results_rate$true_params,
+  conf_level = simulation_results_rate$conf_level
+)
+```
+
+...and then reproduce the summary table:
+
+```{r}
+run_gamma_mle_simulation_rate(true_shape = 5, true_rate = 2, n = 200, seed = 101)
+```
+
+Finally, let us re-run this with a much larger sample size:
+
+```{r}
+simulation_results_rate <- run_gamma_mle_simulation_adv_rate(
+  true_shape = 5, 
+  true_rate = 2, 
+  n = 2000, 
+  seed = 102
+)
+plot_confidence_region_rate(
+  mle_optim = simulation_results_rate$mle_optim,
+  true_params = simulation_results_rate$true_params,
+  conf_level = simulation_results_rate$conf_level
+)
+```
+```{r}
+run_gamma_mle_simulation_rate(true_shape = 5, true_rate = 2, n = 2000, seed = 102)
+```
+
+Both the rectangle and the ellipse are much tighter than before, which confirms the **asymptotic** character of the ML approach to estimation. Also, notice the corners of the coral box that are outside the blue ellipse: a parameter pair in these corners might seem plausible if we only look at the individual confidence intervals, but the joint confidence region tells us that this specific combination of shape and scale is actually very unlikely. 
+Thus, this analysis goes to the very heart of why **Multivariate Statistics** is so important, as it explores the
+difference between **marginal probability** (looking at one parameter at a time, summarized by the rectangle) and **joint probability** (looking at them together, summarized by the ellipse).
+
+#### References

@@ -1,0 +1,4 @@
+"0","# Draw the confidence ellipse using polygon()"
+"0","polygon(ellipse_coords, "
+"0","        col = rgb(0, 0, 1, alpha = 0.3), # Semi-transparent blue"
+"0","        border = ""blue"")"

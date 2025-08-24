@@ -1,0 +1,6 @@
+"0","theta_2 <- atan2(-2*sub_cov_matrix[1,2],sub_cov_matrix[2,2]-sub_cov_matrix[1,1])/2"
+"0","print(theta_2)  "
+"1","[1]"
+"1"," 0.009769021"
+"1","
+"

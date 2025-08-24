@@ -1,0 +1,8 @@
+"0","# Draw the confidence rectangle using rect()"
+"0","# We use a semi-transparent color (via alpha) to allow shapes to be seen through."
+"0","rect(xleft = rect_x_bounds[1], "
+"0","     ybottom = rect_y_bounds[1], "
+"0","     xright = rect_x_bounds[2], "
+"0","     ytop = rect_y_bounds[2],"
+"0","     col = rgb(1, 0, 0, alpha = 0.3),  # Semi-transparent red"
+"0","     border = ""red"")"

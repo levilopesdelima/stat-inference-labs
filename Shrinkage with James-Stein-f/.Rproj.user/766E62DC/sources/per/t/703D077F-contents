@@ -1,0 +1,460 @@
+---
+title: "Shrinkage with James-Stein"
+author: "Levi Lopes de Lima"
+date: "2025-08-17"
+output: 
+    html_document: default
+link-citations: yes
+bibliography: "feyn-notes.bib"
+---
+
+#### Explaining the lab
+ 
+In this lab we illustrate the efficiency of the celebrated James-Stein estimator, which is known to beat the sample mean for samples following a multivariate  normal distribution (with $p\geq 3$ parameters) whose variance $\sigma^2$ is assumed to be known (for simplicity). We carry out this in two manifestations:
+
+  - we revisit the famous analysis of the baseball batting averages data set in [@efron1977stein] first by shrinking toward the origin (with a somewhat irrelevant gain in performance) and then by shrinking toward the **grand mean** (as they did, with a substantial gain taking place).
+  
+  - we repeat the experiment, but this type with randomly generated data wrapped up in a R function depending on the relevant parameters ($p$, $n$, $\mu$ and $\sigma^2$), which can be chosen at will. 
+
+All the math needed to understand the analysis may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes").
+
+#### A glimpse at the theory
+
+Since immemorial times it has been known that an efficient way of estimating the **expectation**
+\[
+\mu=\int_{-\infty}^{+\infty}x\psi(x)dx
+\]
+of a random sample $X_j\sim \psi$, $j=1,\cdots,n$, with each $X_j$ being a **real** random variable, is to use the **sample mean**
+\[
+\overline X_n=\frac{1}{n}\left(X_1+\cdots+X_n\right)
+\]
+for at least the following honorable reasons:
+
+  - $\mathbb E(\overline X_n)=\mu$, which means that $\overline X_n$ is **unbiased** (on average it already hits the target);
+  - as a function of the sample size, $\overline X_n$ is **consistent** in the sense that it converges to $\mu$ as $n\to +\infty$, with the convergence being at least in probability (this is the **Law of Large Numbers**, already know to J. Bernoulli);
+  - it is **asymptotically normal** in the sense that, as $n\to +\infty$, 
+\[
+\sqrt{n}\left(\overline X_n-\mu\right)\to Z, \quad (\textrm{in distribution})
+\]  
+with $Z$ being a random variable following a specific normal distribution: $Z\sim\mathcal N(0,\sigma^2)$, where 
+\[
+\sigma^2=\int_{-\infty}^{+\infty}(x-\mu)^2\psi(x)dx
+\]
+is the population **variance** (this is the **Central Limit Theorem**, already known to P.-S. Laplace);
+  - it has the **minimal** variance among all **linear** and **unbiased** estimators of $\mu$ (this is a rather especial case of the famous **Gauss-Markov theorem** in Linear Regression, so it was certainly already known to K.F. Gauss). 
+
+  
+For **any** estimator $\widehat\mu$ of $\mu$ let us define its **mean squared error** (MSE) by
+\[
+{\rm mse}(\widehat\mu)=\mathbb E\left(|\widehat\mu-\mu|^2\right),
+\]
+which we regard as the measure of efficiency of $\widehat\mu$ (the smaller ${\rm mse}(\widehat\mu)$ the better is $\widehat\mu$ is an estimator). Since there holds the **bias-variance trade-off**
+\[
+{\rm mse}(\widehat\mu)={\rm bias}(\widehat\mu)^2+{\rm var}(\widehat\mu),
+\]
+where
+\[
+{\rm bias}(\widehat\mu)=\mathbb E\left(\widehat\mu-\mu\right)
+\]
+is the **bias** of $\widehat\mu$ (
+so that $\widehat\mu$ is **unbiased** if and only if ${\rm bias}(\widehat\mu)=0$),
+then we may reformulate the last statement as follows:
+
+  - $\overline X_n$ has the best performance (that is, it has the minimal MSE) among **all** liner and unbiased estimators of $\mu$. 
+  
+Although linearity and unbiasedness might be too restrictive assumptions, we call attention to the **universal** character of this result, as it applies to **any** population (in other words, the distribution $\psi$ is arbitrarily taken). In turns out that in general these assumptions can only be removed if we instead fix the underlying population. As an important illustration, we mention that Hodges and Lehmann [@hodges1951some] used the celebrated **Cramér-Rao information inequality** to prove the following remarkable result:
+
+  - if the population is **normal** (that is, $\psi=\mathcal N(\mu,\sigma^2)$) then $\overline X_n$ is **admissible** in the sense that it has the least MSE among **all** estimators of $\mu$ (not necessarily linear or unbiased).
+  
+This is a nice result indeed, which if combined with the fact that $\overline X_n$ is the **maximum likelihood** (ML) estimator for $\mu$ (in case $\psi$ is normal) only attests in favor the outstanding properties of this classical estimator.
+
+Now, it came as a great surprise to the statistical world when W. James and C. Stein [@james1961estimation] showed that the sample mean, despite still being unbiased and ML, fails to be admissible for a sample $X_j\sim\mathcal N({\mu},\sigma^2{\rm Id}_p)$ following a **multivariate**  normal distribution with $p\geq 3$. To substantiate their claim, they exhibited the **James-Stein** estimator
+\[
+\widehat\mu_{JS}=\left(1-\frac{(p-2)\sigma^2/n}{\|\overline X_n\|^2}\right)\overline X_n,
+\]
+which was shown to satisfy ${\rm mse}(\widehat\mu_{JS})<{\rm mes}(\overline X_n)$. This shocking result, which acts by promoting a  **shrinkage** of the supposedly natural estimator, represented a paradigm shift in Statistics which directly led to the development of regularization techniques like **Ridge** and **Lasso**, which are indispensable tools for modern Data Science and Machine Learning. The main message here is that by introducing a small amount of bias into the relevant estimate (by pulling it away from its observed value), a greater reduction in variance is achieved, resulting in a lower **total risk** (as measured by MSE). This seems to defy logic and common sense, but our simulation below will show this paradox in action, thus confirming that strange phenomena await when handling high dimensional data. 
+	
+	
+  
+
+
+
+#### Loading the packages
+
+```{r}
+library(tidyverse)
+```
+
+
+We may now read the data, which are stored in a csv file:
+
+#### Reading the data
+
+```{r}
+baseball_data <- read.csv("baseball.csv")
+baseball_data
+```
+
+
+The dataset displays columns with the performance for 18 MLB players ("Hits"), as recorded in their first 45 times at bat in the 1970 season, as well as their batting averages observed at a later point of their careers ("True_Avg"), which we will treat as the **true** means (thus defining the expectation vector $\mu$ of the underlying normal distribution). Our goal here is to estimate the performance of each player at some future time, say at the end of the season. The classical tradition, based on the bunch of classical results mentioned above, tells us that a reasonable strategy is to look at the observed **sample mean**, which appears in the last column below ("Observed_Avg"):
+
+
+```{r}
+baseball_data_n <- baseball_data %>%
+  mutate(Observed_Avg = Hits / At_Bats)
+baseball_data_n
+```
+
+
+How can we reliably measure the performance of this (or any other empirically obtained) estimator? Since we arranged things so as to have the true values of the population mean ($\mu$) as known, we may adopt the **sum of squared errors** (SSE) 
+\[
+SSE(\widehat\mu,\mu)=\sum_{k=1}^p(\widehat\mu_k-\mu_k)^2
+\]
+as such a measure (for an estimator $\widehat\mu$). When applied to the previous table, this gives the following result. 
+
+
+```{r}
+# This calculate the MSE for the sample mean 
+sse_mle_prel <- sum((baseball_data_n$Observed_Avg - baseball_data_n$True_Avg)^2)
+print(sse_mle_prel)
+```
+
+However, since our normal population has $18\geq 3$ parameters for the mean, we expect that the James-Stein rule should provide a better estimate (as measured by SSE). Let us then implement their scheme. As already observed, we assume for simplicity that the variance is known and start the game by  shrinking toward the origin. 
+
+```{r}
+# This is just the observed average above
+mle_estimates <- baseball_data_n$Observed_Avg
+# James-Stein Estimation
+# Defining the number of parameters and prescribing the variance
+p <- nrow(baseball_data_n)
+sigma_sq <- 0.0055 # Variance assumed as known (for simplicity)
+# Calculating the shrinkage factor, say  C
+sum_sq_dev <- sum((baseball_data_n$Observed_Avg)^2)
+C <- 1 - ((p - 2) * sigma_sq) / sum_sq_dev
+# Calculating the JS estimates
+js_estimates <- C * (baseball_data_n$Observed_Avg)
+```
+
+Let us wrap the whole computation in a ``results`` tibble and then print the outcome.
+
+```{r}
+results <- baseball_data_n %>%
+  mutate(MLE_Estimate = mle_estimates,
+         JS_Estimate = js_estimates)
+print(results)
+```
+
+Note the expected agreement between ``Observed_Avg`` and ``MLE_Estimate``. Also, by comparing the last two columns we don't see much of an improvement. Let us check this 
+by looking at the overall performances of the estimators (via SSE):
+
+```{r}
+# Calculating SSE for each estimator
+sse_mle <- sum((results$MLE_Estimate - results$True_Avg)^2)
+sse_js <- sum((results$JS_Estimate - results$True_Avg)^2)
+# Computing the "improvement rate" of JS w.r.t. MLE
+improv_js_mle <- round(100 * (1 - sse_js/sse_mle), 1)
+```
+
+As usual, we wrap this performance analysis in a table...
+
+```{r}
+performance <- tibble(
+    Estimator = c("MLE", "James-Stein (origin)", "Improvement (%)"),
+    SSE = c(sse_mle, sse_js, improv_js_mle)
+  )
+```
+
+...and then print the result:
+
+```{r}
+# Print the performance table
+knitr::kable(performance, digits = 4, 
+             caption = "SSE Comparison for JS (origin) vs MLE")
+```
+
+So what is the fuss about JS if it returned a gain of only 2.5%? Before seeking for an understanding, it is instructive to visualize the computation.
+
+
+```{r}
+# Here we compute the "grand mean" of the observed mean (for further use)...
+y_gm <- mean(baseball_data_n$Observed_Avg)
+# ...and then come back to the implementation of the "ggplot" code
+results %>%
+  arrange(desc(Observed_Avg)) %>%
+  mutate(Player = fct_inorder(Player)) %>%
+  ggplot(aes(x = Player)) +
+  geom_point(aes(y = MLE_Estimate, color = "MLE (Observed)"), size = 3) +
+  geom_point(aes(y = JS_Estimate, color = "James-Stein"), size = 3) +
+  geom_point(aes(y = True_Avg, color = "True Career Avg"), size = 3, shape = 3, stroke = 1.5) +
+ geom_hline(aes(yintercept = y_gm, linetype = "Grand Mean"), color = "gray50") +
+  geom_segment(aes(xend = Player, y = MLE_Estimate, yend = JS_Estimate), 
+               arrow = arrow(length = unit(0.2, "cm")), color = "blue") +
+  scale_color_manual(name = "Estimate Type", 
+                     values = c("MLE (Observed)" = "darkred", 
+                                "James-Stein" = "blue", 
+                                "True Career Avg" = "darkgreen")) +
+  scale_linetype_manual(name = "", values = c("Grand Mean" = "dashed")) +
+  labs(title = "JS Shrinkage (toward the origin): Baseball Batting Averages",
+       y = "Batting Average", x = "Player") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+Now we clearly see the issue: since we are shrinking toward the origin, the displacements (blue arrows) associated to the players on the left (with a higher observed batting average) go in the **right** direction (approaching "True Careed Avg"), whereas those associated to the players on the right (with a lower observed batting average), although less pronounced, go in the **wrong** direction, so the overall gain in performance becomes negligible. Of course, this takes place because the vector toward which we have shrunk, the origin, has nothing to do with the data. The **moral** here is: in order to obtain a better gain in performance, we must take a  **data-driven** vector as a shrinkage target, with a natural choice being $\nu_{\rm gm}=X_{\rm gm}{\bf 1}$, the vector whose entries all equal the height $X_{\rm gm}\approx 0.2654$ corresponding to the **dashed** horizontal line, as it is the **grand mean**, the average of the entries in the ``Observed_Avg`` column (the MLE estimator). We implement this below by means of the formula 
+\[
+	{\widehat{\mu}}_{JS_{\rm gm}}=\left(1-\frac{(p-3)\sigma^2}{\|\overline X_n-
+	\widehat\nu_{\rm gm}\|^2}\right)\left(\overline X_n-\nu_{\rm gm}\right)+\nu_{\rm gm},	
+\]
+where we have passed from $p-2$ to $p-3$ because $\nu_{\rm gm}$ has been estimated from data (thus costing one degree of freedom to the previous shrinkage constant). 
+
+
+```{r}
+# James-Stein Estimation (toward the grande mean and with the same population parameters as peviously)
+# Calculating the shrinkage factor, say C_shr
+sum_sq_dev_shr <- sum((baseball_data_n$Observed_Avg - y_gm)^2)
+C_shr <- 1 - ((p - 3) * sigma_sq) / sum_sq_dev_shr
+# Calculating  the new JS estimates
+js_estimates_shr <- y_gm + C_shr * (baseball_data_n$Observed_Avg - y_gm)
+```
+
+As usual, let us wrap the whole computation in a ``results_shr_display`` tibble for display.
+
+```{r}
+# Combine into a results tibble...
+results_shr <- baseball_data_n %>%
+  mutate(MLE_Estimate = mle_estimates,
+         JS_Estimate_shr = js_estimates_shr,y_gm) 
+# ...and preparing for display (hiding two columns for better visualization)
+results_shr_display <- results_shr %>%
+  select(Player, True_Avg:JS_Estimate_shr,y_gm)
+print(results_shr_display)
+```
+
+We now clearly see a better performance, with the entries of the new JS estimator being almost the same (and quite close to the grand mean displayed in "y_gm"), but let us check this via SSE.
+
+
+```{r}
+# Calculating the SSE performance of the new estimator
+sse_js_shr <- sum((results_shr$JS_Estimate_shr - results$True_Avg)^2)
+improv_js_mle_shr <- round(100 * (1 - sse_js_shr/sse_mle), 1)
+performance_shr <- tibble(
+    Estimator = c("MLE", "James-Stein (grand mean)", "Improvement (%)"),
+    SSE = c(sse_mle, sse_js_shr, improv_js_mle_shr)
+  )
+# Print the performance table
+knitr::kable(performance_shr, digits = 4, 
+             caption = "SSE Comparison for JS (grand mean) vs MLE")
+```
+
+Thus, a much better performance, which can be readily visualized:
+
+```{r}
+results_shr %>%
+  arrange(desc(Observed_Avg)) %>%
+  mutate(Player = fct_inorder(Player)) %>%
+  ggplot(aes(x = Player)) +
+  geom_point(aes(y = MLE_Estimate, color = "MLE (Observed)"), size = 3) +
+  geom_point(aes(y = JS_Estimate_shr, color = "James-Stein"), size = 3) +
+  geom_point(aes(y = True_Avg, color = "True Career Avg"), size = 3, shape = 3, stroke = 1.5) +
+  geom_hline(aes(yintercept = y_gm, linetype = "Grand Mean"), color = "gray50") +
+  geom_segment(aes(xend = Player, y = MLE_Estimate, yend = JS_Estimate_shr), 
+               arrow = arrow(length = unit(0.2, "cm")), color = "blue") +
+  scale_color_manual(name = "Estimate Type", 
+                     values = c("MLE (Observed)" = "darkred", 
+                                "James-Stein" = "blue", 
+                                "True Career Avg" = "darkgreen")) +
+  scale_linetype_manual(name = "", values = c("Grand Mean" = "dashed")) +
+  labs(title = "James-Stein Shrinkage (Grand Mean): Baseball Batting Averages",
+       y = "Batting Average", x = "Player") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+Although we may possibly get a better result by judiciously choosing the shrinkage vector, perhaps followed by a modification of the shrinkage factor (say, by passing to its positive part), the key message has already been delivered: if a **mean squared risk** is used as a measure of efficiency, the sample mean fails to be the best estimate in higher dimensions!
+
+##### James-Stein with a simulated normal sample 
+
+
+We now complement our illustration of the efficiency of the James-Stein estimator, but this time using simulated data, as this allows for much more flexibility in experimentation. To simplify matters, we wrap the simulation in a R function, ``run_js_simulation()``, depending on the relevant parameters, namely:
+  
+  - $p$, the number of parameters;
+  - $n$, the number of observations;
+  - $\mu$, the true mean vector, represented by ``mu_true`` (which we specify in order to be able to compute the performance of the estimators via SSE);
+  - $\sigma^2$, the variance, represented by ``sigam_sq_true`` (which we assume as know for simplicity). 
+
+Thus, by varying those parameters and running the corresponding simulation, we will have countless experiments at our disposal.  
+
+```{r}
+run_js_simulation <- function(p , n , sigma_sq_true , mu_true ) {
+  # Let us generate the data by creating a matrix of n observations for each of the p parameters, with each column "i" being drawn from N(mu_true[i], sigma_sq_true).
+  data_matrix <- matrix(rnorm(n * p, mean = mu_true, sd = sqrt(sigma_sq_true)),
+                        nrow = n, ncol = p, byrow = TRUE)
+  #  Calculating the MLE, which is the sample mean for each column (thus averaging over the observations).
+  mle_estimates_normal <- colMeans(data_matrix)
+  
+  # Redefining the variance, which we assume as known (for simplicity)
+  S_sq <- sigma_sq_true
+  
+  # James-Stein (JS) Estimator (origin as a target)
+  
+  # Calculating the shrinkage factor.
+  y_bar_norm_sq <- sum(mle_estimates_normal^2)
+  shrinkage_factor <- (((p - 2) * S_sq)/n) / y_bar_norm_sq
+  
+  # Calculating the JS estimator proper
+  C_or <- 1 - shrinkage_factor
+  js_estimates_normal <- C_or * mle_estimates_normal
+  
+  # Evaluating the performance...
+  sse_mle_normal <- sum((mle_estimates_normal - mu_true)^2)
+  sse_js_normal <- sum((js_estimates_normal - mu_true)^2)
+  improv_js_normal <- round(100 * (1 - sse_js_normal/sse_mle_normal), 1)
+  
+  #...and preparing the summary table
+  performance_normal <- tibble(
+    Estimator = c("MLE", "James-Stein", "Improvement (%)"),
+    SSE = c(sse_mle_normal, sse_js_normal, improv_js_normal)
+  )
+  
+  # Preparing for plotting
+  plot_data <- tibble(
+    Parameter_Index = 1:p,
+    True_Mean = mu_true,
+    MLE_Estimate_normal = mle_estimates_normal,
+    JS_Estimate_normal = js_estimates_normal
+  )
+  
+  # Generating the plot
+  plot_normal <- ggplot(plot_data, aes(x = factor(Parameter_Index))) +
+    geom_point(aes(y = MLE_Estimate_normal, color = "MLE (Sample Mean)"), size = 3) +
+    geom_point(aes(y = JS_Estimate_normal, color = "James-Stein"), size = 3) +
+    geom_point(aes(y = True_Mean, color = "True Mean"), size = 4, shape = 4, stroke = 1.5) +
+    geom_hline(aes(yintercept = 0, linetype = "Shrinkage Target"), color = "gray50") +
+    geom_segment(aes(xend = factor(Parameter_Index), y = MLE_Estimate_normal, yend = JS_Estimate_normal), 
+                 arrow = arrow(length = unit(0.2, "cm")), color = "blue") +
+    scale_color_manual(name = "Estimate Type", 
+                       values = c("MLE (Sample Mean)" = "darkred", 
+                                  "James-Stein" = "blue", 
+                                  "True Mean" = "darkgreen")) +
+    scale_linetype_manual(name = "", values = c("Shrinkage Target" = "dashed")) +
+    labs(title = paste("James-Stein Shrinkage with", p, "Multivariate Normal Means"),
+         subtitle = "Estimates are shrunk towards the origin",
+         y = "Value", x = "Parameter Index") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+
+  # The final result in a list
+  return(list(performance = performance_normal, plot = plot_normal))
+}
+```
+
+
+We may now choose the parameters, run the simulation and print the performance table:
+
+```{r}
+# Set seed for reproducibility
+set.seed(235)
+
+# Run the simulation
+sim_or <- run_js_simulation(p = 18, n = 10, sigma_sq_true = 25, mu_true =  rnorm(18, mean = 10, sd = 2))
+
+# Print the performance table
+knitr::kable(sim_or$performance, digits = 4, 
+             caption = "SSE Comparison for JS (origin) and MLE")
+```
+
+As expected, a very modest improvement ($\approx 6.0\%$), which we may confirm with the respective plot, which records very small displacements of JS w.r.t. MLE (as a function of the parameter index). 
+
+```{r}
+print(sim_or$plot)
+```
+
+
+This suggests that we should re-run the simulation, but this times shrinking towards the **grand mean**.
+
+
+```{r}
+# The function is renamed to indicate it shrinks to the Grand Mean, otherwise it follows the same patter as above
+
+run_js_simulation_gm <- function(p , n , sigma_sq_true , mu_true ) { 
+  data_matrix <- matrix(rnorm(n * p, mean = mu_true, sd = sqrt(sigma_sq_true)),
+                        nrow = n, ncol = p, byrow = TRUE)
+  mle_estimates_normal <- colMeans(data_matrix)
+  S_sq <- sigma_sq_true
+  
+  # James-Stein, with the target being the "grand mean" of all the individual MLEs.
+  grand_mean <- mean(mle_estimates_normal)
+  sum_sq_dev_from_grand_mean <- sum((mle_estimates_normal - grand_mean)^2)
+  shrinkage_factor <- (((p - 3) * S_sq) / n) / sum_sq_dev_from_grand_mean
+  C_gm <- 1 - shrinkage_factor
+  js_estimates_gm <- grand_mean + C_gm * (mle_estimates_normal - grand_mean)
+  
+  # Evaluating the performance
+  sse_mle_normal <- sum((mle_estimates_normal - mu_true)^2)
+  sse_js_normal_gm <- sum((js_estimates_gm - mu_true)^2) 
+  improv_js_normal_gm <- round(100 * (1 - sse_js_normal_gm/sse_mle_normal), 1)
+  
+  # Performance tibble
+  performance_gm <- tibble( # <-- CHANGED
+    Estimator = c("MLE", "James-Stein (Grand Mean)", "Improvement (%)"),
+    SSE = c(sse_mle_normal, sse_js_normal_gm, improv_js_normal_gm) 
+  )
+  
+  # Preparing for plotting 
+  plot_data_gm <- tibble(
+    Parameter_Index = 1:p,
+    True_Mean = mu_true,
+    MLE_Estimate_normal = mle_estimates_normal,
+    JS_Estimate_gm = js_estimates_gm # 
+  )
+  
+  # Generating the plot
+  plot_gm <- ggplot(plot_data_gm, aes(x = factor(Parameter_Index))) + # <-- CHANGED (data source)
+    geom_point(aes(y = MLE_Estimate_normal, color = "MLE (Sample Mean)"), size = 3) +
+    geom_point(aes(y = JS_Estimate_gm, color = "James-Stein"), size = 3) + # <-- CHANGED (y-aesthetic)
+    geom_point(aes(y = True_Mean, color = "True Mean"), size = 4, shape = 4, stroke = 1.5) +
+    geom_hline(aes(yintercept = grand_mean, linetype = "Shrinkage Target (Grand Mean)"), color = "gray50") +
+    geom_segment(aes(xend = factor(Parameter_Index), y = MLE_Estimate_normal, yend = JS_Estimate_gm), # <-- CHANGED (yend)
+                 arrow = arrow(length = unit(0.2, "cm")), color = "blue") +
+    scale_color_manual(name = "Estimate Type", 
+                       values = c("MLE (Sample Mean)" = "darkred", 
+                                  "James-Stein" = "blue", 
+                                  "True Mean" = "darkgreen")) +
+    scale_linetype_manual(name = "", values = c("Shrinkage Target (Grand Mean)" = "dashed")) +
+    labs(title = paste("James-Stein Shrinkage with", p, "Multivariate Normal Means"),
+         subtitle = paste("Estimates are shrunk towards the Grand Mean (", round(grand_mean, 2), ")"),
+         y = "Value", x = "Parameter Index") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+
+  # The final result in a list
+  return(list(performance = performance_gm, plot = plot_gm, grand_mean = grand_mean))
+}
+```
+
+So we may now re-run the experiment with the same raw data and assess the result (both numerically and visually):
+
+```{r}
+# Set seed for reproducibility
+set.seed(235)
+
+# Running the simulation
+sim_gm <- run_js_simulation_gm(p = 18, n = 10, sigma_sq_true = 25, mu_true =  rnorm(18, mean = 10, sd = 2)) 
+
+# The results
+knitr::kable(sim_gm$performance, digits = 4, # <-- CHANGED
+             caption = "MSE Comparison: Shrinking to the Grand Mean")
+print(sim_gm$plot)
+```
+
+
+Thus, a much better performance!
+
+You may now play around with this code (by adjusting the parameters and choosing the target at your will) to see what happens...
+
+
+#### References
+
+
