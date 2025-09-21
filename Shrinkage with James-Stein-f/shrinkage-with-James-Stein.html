@@ -382,10 +382,13 @@ display: none;
 
 <div id="explaining-the-lab" class="section level4">
 <h4>Explaining the lab</h4>
-<p>In this lab we illustrate the efficiency of the celebrated
-James-Stein estimator, which is known to beat the sample mean for
-samples following a multivariate normal distribution (with <span class="math inline">\(p\geq 3\)</span> parameters) whose variance <span class="math inline">\(\sigma^2\)</span> is assumed to be known (for
-simplicity). We carry out this in two manifestations:</p>
+<p>In this lab we illustrate the performance of the celebrated
+<strong>James-Stein estimator</strong>, which is known to beat the
+<strong>sample mean</strong> for samples following a multivariate normal
+distribution (with <span class="math inline">\(p\geq 3\)</span>
+parameters) whose variance <span class="math inline">\(\sigma^2\)</span>
+is assumed to be known (for simplicity). We carry out this in two
+manifestations:</p>
 <ul>
 <li><p>we revisit the famous analysis of the baseball batting averages
 data set in <span class="citation">(<a href="#ref-efron1977stein">Efron
@@ -399,7 +402,8 @@ data wrapped up in a R function depending on the relevant parameters
 will.</p></li>
 </ul>
 <p>All the math needed to understand the analysis may be found in <span class="citation">(<a href="#ref-delima2025probab">Lima 2023</a>)</span>,
-which is available <a href="https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view" title="my notes">here</a>.</p>
+which is available <a href="https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view" title="my notes">here</a>; see also <span class="citation">(<a href="#ref-james1961estimation">James and Stein 1961</a>)</span> for the
+original paper.</p>
 </div>
 <div id="a-glimpse-at-the-theory" class="section level4">
 <h4>A glimpse at the theory</h4>
@@ -420,8 +424,8 @@ which means that <span class="math inline">\(\overline X_n\)</span> is
 <li>as a function of the sample size, <span class="math inline">\(\overline X_n\)</span> is
 <strong>consistent</strong> in the sense that it converges to <span class="math inline">\(\mu\)</span> as <span class="math inline">\(n\to
 +\infty\)</span>, with the convergence being at least in probability
-(this is the <strong>Law of Large Numbers</strong>, already know to J.
-Bernoulli);</li>
+(this is the <strong>Law of Large Numbers</strong>, already know to
+<strong>J. Bernoulli</strong>);</li>
 <li>it is <strong>asymptotically normal</strong> in the sense that, as
 <span class="math inline">\(n\to +\infty\)</span>, <span class="math display">\[
 \sqrt{n}\left(\overline X_n-\mu\right)\to Z, \quad (\textrm{in
@@ -431,13 +435,14 @@ with <span class="math inline">\(Z\)</span> being a random variable
 following a specific normal distribution: <span class="math inline">\(Z\sim\mathcal N(0,\sigma^2)\)</span>, where <span class="math display">\[
 \sigma^2=\int_{-\infty}^{+\infty}(x-\mu)^2\psi(x)dx
 \]</span> is the population <strong>variance</strong> (this is the
-<strong>Central Limit Theorem</strong>, already known to P.-S.
-Laplace);</li>
+<strong>Central Limit Theorem</strong>, already known to <strong>P.-S.
+Laplace</strong>);</li>
 <li>it has the <strong>minimal</strong> variance among all
 <strong>linear</strong> and <strong>unbiased</strong> estimators of
 <span class="math inline">\(\mu\)</span> (this is a rather especial case
 of the famous <strong>Gauss-Markov theorem</strong> in Linear
-Regression, so it was certainly already known to K.F. Gauss).</li>
+Regression, so it was certainly already known to <strong>K.F.
+Gauss</strong>).</li>
 </ul>
 <p>For <strong>any</strong> estimator <span class="math inline">\(\widehat\mu\)</span> of <span class="math inline">\(\mu\)</span> let us define its <strong>mean
 squared error</strong> (MSE) by <span class="math display">\[
@@ -474,31 +479,32 @@ unbiased).</li>
 </ul>
 <p>This is a nice result indeed, which if combined with the fact that
 <span class="math inline">\(\overline X_n\)</span> is the
-<strong>maximum likelihood</strong> (ML) estimator for <span class="math inline">\(\mu\)</span> (in case <span class="math inline">\(\psi\)</span> is normal) only attests in favor the
-outstanding properties of this classical estimator.</p>
+<strong>maximum likelihood</strong> (ML) estimator for <span class="math inline">\(\mu\)</span> (again, in case <span class="math inline">\(\psi\)</span> is normal) only attests in favor of
+the outstanding properties of this classical estimator.</p>
 <p>Now, it came as a great surprise to the statistical world when W.
 James and C. Stein <span class="citation">(<a href="#ref-james1961estimation">James and Stein 1961</a>)</span> showed
 that the sample mean, despite still being unbiased and ML, fails to be
 admissible for a sample <span class="math inline">\(X_j\sim\mathcal
 N({\mu},\sigma^2{\rm Id}_p)\)</span> following a
 <strong>multivariate</strong> normal distribution with <span class="math inline">\(p\geq 3\)</span>. To substantiate their claim,
-they exhibited the <strong>James-Stein</strong> estimator <span class="math display">\[
+they exhibited the <strong>James-Stein estimator</strong> <span class="math display">\[
 \widehat\mu_{JS}=\left(1-\frac{(p-2)\sigma^2/n}{\|\overline
 X_n\|^2}\right)\overline X_n,
 \]</span> which was shown to satisfy <span class="math inline">\({\rm
 mse}(\widehat\mu_{JS})&lt;{\rm mes}(\overline X_n)\)</span>. This
 shocking result, which acts by promoting a <strong>shrinkage</strong> of
-the supposedly natural estimator, represented a paradigm shift in
-Statistics which directly led to the development of regularization
-techniques like <strong>Ridge</strong> and <strong>Lasso</strong>, which
-are indispensable tools for modern Data Science and Machine Learning.
-The main message here is that by introducing a small amount of bias into
-the relevant estimate (by pulling it away from its observed value), a
-greater reduction in variance is achieved, resulting in a lower
-<strong>total risk</strong> (as measured by MSE). This seems to defy
-logic and common sense, but our simulation below will show this paradox
-in action, thus confirming that strange phenomena await when handling
-high dimensional data.</p>
+the supposedly natural estimator <span class="math inline">\(\overline
+X_n\)</span>, represented a paradigm shift in Statistics directly
+leading to the development of regularization techniques like
+<strong>Ridge</strong> and <strong>Lasso</strong>, which are
+indispensable tools for modern <strong>Data Science</strong> and
+<strong>Machine Learning</strong>. The main message here is that by
+introducing a small amount of bias into the relevant estimate (by
+pulling it away from its observed value), a greater reduction in
+variance is achieved, resulting in a lower <strong>total risk</strong>
+(as measured by MSE). This seems to defy logic and common sense, but our
+simulation below will show this paradox in action, thus confirming that
+strange phenomena await when handling high dimensional data.</p>
 </div>
 <div id="loading-the-packages" class="section level4">
 <h4>Loading the packages</h4>
@@ -664,9 +670,9 @@ knitr::kable(performance, digits = 4,
 </tr>
 </tbody>
 </table>
-<p>So what is the fuss about JS if it returned a gain of only 2.5%?
-Before seeking for an understanding, it is instructive to visualize the
-computation.</p>
+<p>So what is the fuss about this version of JS if it returned a gain of
+only 2.5%? Before seeking for an understanding, it is instructive to
+visualize the computation.</p>
 <pre class="r"><code># Here we compute the &quot;grand mean&quot; of the observed mean (for further use)...
 y_gm &lt;- mean(baseball_data_n$Observed_Avg)
 # ...and then come back to the implementation of the &quot;ggplot&quot; code
@@ -693,16 +699,17 @@ results %&gt;%
 <p>Now we clearly see the issue: since we are shrinking toward the
 origin, the displacements (blue arrows) associated to the players on the
 left (with a higher observed batting average) go in the
-<strong>right</strong> direction (approaching “True Careed Avg”),
-whereas those associated to the players on the right (with a lower
-observed batting average), although less pronounced, go in the
-<strong>wrong</strong> direction, so the overall gain in performance
-becomes negligible. Of course, this takes place because the vector
-toward which we have shrunk, the origin, has nothing to do with the
-data. The <strong>moral</strong> here is: in order to obtain a better
-gain in performance, we must take a <strong>data-driven</strong> vector
-as a shrinkage target, with a natural choice being <span class="math inline">\(\nu_{\rm gm}=X_{\rm gm}{\bf 1}\)</span>, the
-vector whose entries all equal the height <span class="math inline">\(X_{\rm gm}\approx 0.2654\)</span> corresponding to
+<strong>right</strong> direction (approaching
+<code>True Careed Avg</code>), whereas those associated to the players
+on the right (with a lower observed batting average), although less
+pronounced, go in the <strong>wrong</strong> direction, so the overall
+gain in performance becomes negligible. Of course, this takes place
+because the vector toward which we have shrunk, the origin, has nothing
+to do with the data. The <strong>moral</strong> here is: in order to
+obtain a better gain in performance, we must take a
+<strong>data-driven</strong> vector as a shrinkage target, with a
+natural choice being <span class="math inline">\(\nu_{\rm gm}=X_{\rm
+gm}{\bf 1}\)</span>, the vector whose entries all equal the height <span class="math inline">\(X_{\rm gm}\approx 0.2654\)</span> corresponding to
 the <strong>dashed</strong> horizontal line, as it is the <strong>grand
 mean</strong>, the average of the entries in the
 <code>Observed_Avg</code> column (the MLE estimator). We implement this
@@ -726,7 +733,7 @@ js_estimates_shr &lt;- y_gm + C_shr * (baseball_data_n$Observed_Avg - y_gm)</cod
 results_shr &lt;- baseball_data_n %&gt;%
   mutate(MLE_Estimate = mle_estimates,
          JS_Estimate_shr = js_estimates_shr,y_gm) 
-# ...and preparing for display (hiding two columns for better visualization)
+# ...and prepare for display (hiding two columns for better visualization)
 results_shr_display &lt;- results_shr %&gt;%
   select(Player, True_Avg:JS_Estimate_shr,y_gm)
 print(results_shr_display)</code></pre>
@@ -750,8 +757,9 @@ print(results_shr_display)</code></pre>
 ## 17         Munson    0.316    0.1777778    0.1777778       0.2654941 0.2654321
 ## 18          Alvis    0.254    0.1555556    0.1555556       0.2655098 0.2654321</code></pre>
 <p>We now clearly see a better performance, with the entries of the new
-JS estimator being almost the same (and quite close to the grand mean
-displayed in “y_gm”), but let us check this via SSE.</p>
+JS estimator (<code>JS_Estimate_shr</code>) being almost the same (and
+quite close to the grand mean displayed in <code>y_gm</code>), but let
+us check this via SSE.</p>
 <pre class="r"><code># Calculating the SSE performance of the new estimator
 sse_js_shr &lt;- sum((results_shr$JS_Estimate_shr - results$True_Avg)^2)
 improv_js_mle_shr &lt;- round(100 * (1 - sse_js_shr/sse_mle), 1)

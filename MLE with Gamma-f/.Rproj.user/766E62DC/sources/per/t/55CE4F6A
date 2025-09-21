@@ -1,9 +1,9 @@
 {
     "id": "55CE4F6A",
-    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/MLE with Gamma-f/mle with gamma-f.Rmd",
+    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/MLE with Gamma-f/mle with gamma-f.Rmd",
     "project_path": "mle with gamma-f.Rmd",
     "type": "r_markdown",
-    "hash": "2879845804",
+    "hash": "3799954244",
     "contents": "",
     "dirty": false,
     "created": 1755856332498.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "4,8",
-        "scrollLine": "0"
+        "cursorPosition": "22,124",
+        "scrollLine": "18"
     },
     "folds": "",
-    "lastKnownWriteTime": 1755861370,
+    "lastKnownWriteTime": 1758450683,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1755861370748,
+    "last_content_update": 1758450683728,
     "read_only": false,
     "read_only_alternatives": []
 }

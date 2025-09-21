@@ -1,9 +1,9 @@
 {
     "id": "1184DD27",
-    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Johnson-Lindenstrauss-f/johnson-lindenstrauss-f.Rmd",
+    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/Johnson-Lindenstrauss-f/johnson-lindenstrauss-f.Rmd",
     "project_path": "johnson-lindenstrauss-f.Rmd",
     "type": "r_markdown",
-    "hash": "2257221966",
+    "hash": "1719967110",
     "contents": "",
     "dirty": false,
     "created": 1755848795028.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "199,213",
-        "scrollLine": "189"
+        "cursorPosition": "141,23",
+        "scrollLine": "132"
     },
     "folds": "",
-    "lastKnownWriteTime": 1755861885,
+    "lastKnownWriteTime": 1758448525,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1755861996486,
+    "last_content_update": 1758448525459,
     "read_only": false,
     "read_only_alternatives": []
 }

@@ -10,7 +10,7 @@ bibliography: "feyn-notes.bib"
 
 #### Details about the lab
 
-Here we will provide a few simulations in order to illustrate the validity of a fundamental result in Probability Theory, namely, the **Central Limit Theorem** (CLT). After plotting the CDFs (cummulative distribution functions) and PDFs (probability density functions) of the tree parent distributions to be used as "initial configurations" (**uniform**, **exponential** and **Gamma**), which allows us to appreciate their theoretical distinctions (both in **shape** and **skewness**), we proceed to run simulations based on a R function which generates the plots describing the convergence (not only at the PDF but, more importantly, at the CDF level) and also annotates them with key statistics, specially the standard deviation, which we adopt as a measure of convergence toward a normal and hence may be used to interpret how the parameters affect the outcome. In order to better grasp how the normal approximation depends so heavily on the shape of the parent distribution, we run another simulation (this time only for the **uniform** and the **exponentional**) in which the whose process is re-examined in the light of the celebrated **Berry-Esseen theorem**, a key result formalizing what has already been observed visually in our previous simulation: the rate of convergence of the sample mean to a normal distribution is fundamentally governed by the skewness of the original population (as measured by its **shape factor**).
+Here we will provide a few simulations in order to illustrate the validity of a fundamental result in Probability Theory, namely, the **Central Limit Theorem** (CLT). After plotting the CDFs (cummulative distribution functions) and PDFs (probability density functions) of the tree parent distributions to be used as "initial configurations" (**uniform**, **exponential** and **Gamma**), which allows us to appreciate their theoretical distinctions (both in **shape** and **skewness**), we proceed to run simulations based on a R function which generates the plots describing the convergence (not only at the PDF but, more importantly, at the CDF level) and also annotates them with key statistics, specially the standard deviation, which we adopt as a measure of convergence toward a normal and hence may be used to interpret how the parameters affect the outcome. In order to better grasp how the normal approximation depends so heavily on the shape of the parent distribution, we run another simulation (this time only for the **uniform** and the **exponentional**) in which the whole process is re-examined in the light of the celebrated **Berry-Esseen theorem**, a key result formalizing what has already been observed visually in our previous simulation: the rate of convergence of the sample mean to a normal distribution is fundamentally governed by the skewness of the original population (as measured by its **shape factor**).
 
 
 All the math needed to understand the simulation may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes").
@@ -70,63 +70,132 @@ We start by plotting the PDFs and CDFs for these distributions by means of a fun
 
 
 ```{r}
-plot_theoretical_distributions <- function() {
-  params <- list(
-    # This part of the code may be modified with the insertion of new parameters (min, max, rate, shape and scale) determining the parent distributions
-    uniform = list(min = 0, max = 10),
+library(tidyverse)
+
+plot_theoretical_distributions <- function(
+  params = list(
+    uniform     = list(min = 0, max = 10),
     exponential = list(rate = 0.5),
-    gamma = list(shape = 2, scale = 2)
-  )
-  curve_data <- crossing(
-    distribution = factor(c("Uniform", "Exponential", "Gamma"), levels = c("Uniform", "Exponential", "Gamma")),
-    x = seq(-5, 25, length.out = 600) 
-  ) %>%
-  mutate(
-    pdf_y = case_when(
-      distribution == "Uniform"     ~ dunif(x, min = params$uniform$min, max = params$uniform$max),
-      distribution == "Exponential" ~ dexp(x, rate = params$exponential$rate),
-      distribution == "Gamma"       ~ dgamma(x, shape = params$gamma$shape, scale = params$gamma$scale),
-      TRUE ~ NA_real_ 
-    ),
-    cdf_y = case_when(
-      distribution == "Uniform"     ~ punif(x, min = params$uniform$min, max = params$uniform$max),
-      distribution == "Exponential" ~ pexp(x, rate = params$exponential$rate),
-      distribution == "Gamma"       ~ pgamma(x, shape = params$gamma$shape, scale = params$gamma$scale),
-      TRUE ~ NA_real_
+    gamma       = list(shape = 2, scale = 2)
+  ),
+  n_points   = 600,
+  same_scale = FALSE
+) {
+  # Supported distributions
+  dist_suffix <- function(name) {
+    switch(tolower(name),
+           "uniform"     = "unif",
+           "exponential" = "exp",
+           "gamma"       = "gamma",
+           NULL
     )
-  )
-  p_pdf <- ggplot(curve_data, aes(x = x, y = pdf_y)) +
-    geom_line(color = "red", linewidth = 1.2) +
-    facet_wrap(~ distribution, scales = "free") +
+  }
+
+  get_funs <- function(name) {
+    suf <- dist_suffix(name)
+    if (is.null(suf)) return(NULL)
+    list(
+      d = get(paste0("d", suf), mode = "function"),
+      p = get(paste0("p", suf), mode = "function"),
+      q = get(paste0("q", suf), mode = "function"),
+      suf = suf
+    )
+  }
+
+  # Build data per distribution
+  dist_dfs <- purrr::imap(params, function(arg_list, name) {
+    f <- get_funs(name)
+    if (is.null(f)) return(NULL)
+
+    q_lo <- suppressWarnings(
+      tryCatch(do.call(f$q, c(list(p = 0.001), arg_list)), error = function(e) NA_real_)
+    )
+    q_hi <- suppressWarnings(
+      tryCatch(do.call(f$q, c(list(p = 0.999), arg_list)), error = function(e) NA_real_)
+    )
+
+    if (is.na(q_lo) || is.na(q_hi) || !is.finite(q_lo) || !is.finite(q_hi)) {
+      if (f$suf == "unif") {
+        q_lo <- arg_list$min %||% 0
+        q_hi <- arg_list$max %||% 1
+      } else {
+        q_lo <- 0
+        q_hi <- 10
+      }
+    }
+
+    rng  <- q_hi - q_lo
+    pad  <- max(0.05 * rng, 1e-8)
+    xmin <- q_lo - pad
+    xmax <- q_hi + pad
+
+    tibble(
+      distribution = name,
+      x = seq(xmin, xmax, length.out = n_points)
+    ) %>%
+      mutate(
+        pdf_y = do.call(f$d, c(list(x = x), arg_list)),
+        cdf_y = do.call(f$p, c(list(q = x), arg_list))
+      )
+  }) %>% compact()
+
+  # Combine and set fixed order
+  curve_data <- bind_rows(dist_dfs) %>%
+    mutate(
+      Distribution = factor(
+        stringr::str_to_title(distribution),
+        levels = c("Uniform", "Exponential", "Gamma")
+      )
+    )
+
+  base_aes <- aes(x = x, group = Distribution, color = Distribution)
+
+  p_pdf <- ggplot(curve_data, aes(y = pdf_y)) +
+    geom_line(base_aes, linewidth = 1.2) +
+    facet_wrap(~ Distribution, scales = if (same_scale) "fixed" else "free") +
     labs(
-      title = "Probability Density Functions (PDFs)",
-      subtitle = "Illustrating the Shape of Parent Populations",
-      x = "Value",
-      y = "Density"
+      title    = "Probability Density Functions (PDFs)",
+      subtitle = "Uniform, Exponential, and Gamma",
+      x = "Value", y = "Density", color = "Distribution"
     ) +
-    theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
-    #4. Create the CDF plots using geom_line
-  p_cdf <- ggplot(curve_data, aes(x = x, y = cdf_y)) +
-    geom_line(color = "dodgerblue", linewidth = 1.2) +
-    facet_wrap(~ distribution, scales = "free") +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+
+  p_cdf <- ggplot(curve_data, aes(y = cdf_y)) +
+    geom_line(base_aes, linewidth = 1.2) +
+    facet_wrap(~ Distribution, scales = if (same_scale) "fixed" else "free") +
     labs(
-      title = "Cumulative Distribution Functions (CDFs)",
-      subtitle = "Illustrating the Shape of Parent Populations",
-      x = "Value",
-      y = "Cumulative Probability"
+      title    = "Cumulative Distribution Functions (CDFs)",
+      subtitle = "Uniform, Exponential, and Gamma",
+      x = "Value", y = "Cumulative Probability", color = "Distribution"
     ) +
-    theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
-  # Return both plot objects in a list
-   return(list(
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+
+  list(
+    data = curve_data,
     pdf_plots = p_pdf,
     cdf_plots = p_cdf
-  ))
+  )
 }
-  # The list proper
-  theoretical_plots <- plot_theoretical_distributions()
+
+# Example
+params1 <- list(
+  uniform     = list(min = 0, max = 10),
+  exponential = list(rate = 0.5),
+  gamma       = list(shape = 2, scale = 2)
+)
+
+theoretical_plots <- plot_theoretical_distributions(params = params1)
+# theoretical_plots$pdf_plots
+# theoretical_plots$cdf_plots
+
+
+
 ```
+
 
 With the list at hand, we may now call the plots. 
 
@@ -136,7 +205,7 @@ theoretical_plots$pdf_plots
 ```
 
 
-The three distinct shapes of the starting distributions are now apparent from the PDFs plots (in red):
+The three distinct shapes of the starting distributions are now apparent from the PDFs plots:
 
 
   - **Uniform**: A perfectly flat, symmetric (around its mean $= 5$) but non-bell-shaped distribution;
@@ -255,7 +324,7 @@ plot_clt_final_version(sample_size = 5)
 
 With just a few iterations we already see that the **uniform** is the distribution that best fits the theoretical normal distribution in red, notably if compared to the **Gamma**, which essentially has the same spread (as measured by sd). In fact, we detect a slight shift to the left of the histograms of **exponential** and **Gamma**, which at first sight should be attributed to their skewness.
 
-We now look at three more interactions ...
+We now look at three more iterations ...
 
 ```{r}
 plot_clt_final_version(sample_size = 50)
@@ -357,7 +426,7 @@ plot_clt_cdf_convergence <- function(population_size = 10000, sample_size = 50, 
 }
 ```
 
-We will run the simulation only for two (extreme) values of $n$. First, $n=5$:
+We will run the simulation only for two values of $n$. First, $n=5$:
 
 ```{r}
 plot_clt_cdf_convergence(sample_size = 5)
@@ -484,7 +553,7 @@ simulate_berry_esseen_snapshots <- function(
 be_plots_snapshots <- simulate_berry_esseen_snapshots()
 ```
  
-Note that the shape factor ($\varepsilon$) for **uniform** is much smaller that that for **exponential**, thus denouncing the pronounced skewness of this latter distribution. In particular, this indicates that the convergence toward a normal for **exponential** should be much slower.  
+Note that the shape factor ($\varepsilon$) for **uniform** is much smaller than that of **exponential**, thus denouncing the pronounced skewness of this latter distribution. In particular, this indicates that the convergence toward a normal for **exponential** should be much slower.  
 
 ```{r}
 be_plots_snapshots$error_vs_n_plot
@@ -514,7 +583,7 @@ We may summarize the grid as follows:
   - Reading across any row shows the convergence for that distribution. 
   - Reading down any column provides a direct comparison of the error structure across the distributions at a fixed sample size. 
   
-In conclusion, this final visualization certainly illustrates **Berry-Esseen 
+In conclusion, this final visualization effectively illustrates **Berry-Esseen 
 theorem** in action.
 
 

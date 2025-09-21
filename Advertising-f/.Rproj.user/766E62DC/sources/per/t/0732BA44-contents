@@ -319,7 +319,7 @@ Thus, as far as linearity[^1], error normality, homoscedasticity and outliers ar
 
  [^1]:We will challenge this linearity assumption later on when we discuss the statistical significance of introducing quadratic terms in the model.
 
-Let us now play devil's advocate and check normality **numerically** with a well-known formal test available in R:
+Let us now play devil's advocate and check normality **numerically** with a well-known test available in R:
 
 ```{r}
 shapiro.test(residuals(model_total))
@@ -328,8 +328,7 @@ shapiro.test(residuals(model_total))
 
 
 Thus, the rather small *p*-value indicates that the residuals normality has failed the **Shapiro-Wilk test**. We note, however, that the use of *p*-value-based tests to check normality of residuals is disputable for at least two reasons: i) the tests are not powerful enough for small samples when normality might be important; ii)  they are too powerful for large samples, when normality is less important due to the Central Limit Theorem (CLT). 
-
-Since the *p*-value is small (< 0.05) but the Q-Q plot above looks "almost" straight with only minor wiggles (and only near the extremities), we get strong indication that our data are likely "normal enough." Hence, we will stick to the graphical analysis above, and will assume that the residuals are normally distributed (which indirectly confirms the error normality of the model) for at least two reasons:
+Taking this account and noticing that the Q-Q plot above looks "almost" straight with only minor wiggles (and only near the extremities), we get strong indication that our data are likely "normal enough." Hence, we will stick to the graphical analysis above, and will assume that the residuals are normally distributed (which indirectly confirms the error normality of the model) for at least two reasons:
 
    - the sample size is *n=200*, which allows us to confidently appeal to CLT;
    
@@ -560,6 +559,36 @@ print_coeffs_with_ci(model_total)
 ```
 
 
+We may also visualize the confidence intervals, with the one for the *intercept* excluded:
+
+
+```{r}
+plot_coef_intervals <- function(model) {
+  coefs <- as.data.frame(summary(model)$coefficients)
+  conf_intervals <- confint(model)
+  plot_data <- data.frame(
+    term = rownames(coefs),
+    estimate = coefs$Estimate,
+    lower = conf_intervals[, 1],
+    upper = conf_intervals[, 2]
+  )
+  
+  plot_data <- plot_data[plot_data$term != "(Intercept)", ]#intercept excluded
+ 
+   ggplot(plot_data, aes(x = term, y = estimate, ymin = lower, ymax = upper)) +
+    geom_point() +
+    geom_errorbar(width = 0.2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    coord_flip() + 
+    labs(
+      title = "Coefficient Confidence Intervals",
+      x = "Regressors",
+      y = "Coefficient Estimate and 95% Confidence Interval"
+    ) +
+    theme_minimal()
+}
+plot_coef_intervals(model_total)
+```
 
 As expected, the only confidence interval containing 0 is the last one, which means that we may discard *newspaper* as a predictor if we wish. Besides, we note that the interval for *TV* is much closer to 0 than the one for *radio*, an information not available in the corresponding *p*-values, indicating that this latter variable is slightly more significant that the former one (this is already hinted at if we look at the respective $\mathfrak t$-statistics: *32.8* and *21.9*). 
 In particular, we see that:
@@ -570,7 +599,7 @@ In particular, we see that:
   
   - one thousand dollars of increasing on newspaper advertising explains a variation in sales that goes from a **decreasing** of about *13* to an **increasing** of about *10* units, with an estimated net value of *1* (hence, virtually null).
   
-Taken together, these items mean that spending in radio is about four times more efficient than spending in TV, with these variables certainly being significant for explaining sales, whereas spending in newspaper yields a practically null effect on sales. This detailed analysis illustrates the need to complement the *p*-value information with the construction of confidence intervals. Finally, although the summary confirms that it is statistically significant, in general the *intercept* $\beta_0$ is **not interpretable** and we follow this tradition here. 
+Taken together, these items mean that spending in radio is about four times more efficient than spending in TV, with these variables certainly being significant for explaining sales, whereas spending in newspaper yields a practically null effect on sales. This detailed analysis illustrates the need to complement the *p*-value information with the construction of confidence intervals. Finally, although the summary confirms that it is statistically significant, in general the *intercept* $\beta_0$ is **not interpretable** and we follow this tradition here (this is the reason why its confidence interval has been excluded in the previous plot). 
 
 Following the suggestion above, we now simply discard *newspaper* and fit a model with the remaining predictors:
 
@@ -624,10 +653,17 @@ Let us also look at the model summary...
 summary_with_colors(model_partial)
 ```
 
-...with the third block adjusted to contain the *95%* confidence intervals:
+...with the third block adjusted to contain the *95%* confidence intervals...
 
 ```{r}
 print_coeffs_with_ci(model_partial)
+```
+
+...and the corresponding plots:
+
+
+```{r}
+plot_coef_intervals(model_partial)
 ```
 
 
@@ -673,8 +709,8 @@ print(p_value)
 The large *p*-value (*~0.86*), obtained by either method, confirms that the null model (*model_partial*) should **not** be rejected, so we may safely discard *newspaper* from our original model. 
 
 As a final checking of *model_partial*, let us draw the 95% confidence ellipsis for the whole vector parameter *(TV,radio)*, with the central dot representing the estimate and the dashed lines indicating the end-points of the individual confidence intervals. For this we will use the ``ellipse`` package available in R, 
-so the code below just tells this package how
-to juxtapose to its output 
+so the code below just tells  how
+to juxtapose to the output of this package 
 the rectangle corresponding to the confidence intervals. 
 
 
@@ -758,12 +794,14 @@ vars_of_interest <- c("TV", "radio")
 sub_cov_matrix <- cov_matrix[vars_of_interest, vars_of_interest]
 print(sub_cov_matrix)
 ```
-...and compute the tilting of our ellipse by means of a well-known formula...
+
+...and use it to compute the tilting angle $\theta$ of our ellipse by means of the well-known formula...
 
 ```{r}
-theta <- atan2(-2*sub_cov_matrix[1,2],sub_cov_matrix[2,2]-sub_cov_matrix[1,1])/2
+theta <- atan(2*sub_cov_matrix[1,2]/(sub_cov_matrix[1,1]-sub_cov_matrix[2,2]))/2
 print(theta)  
 ```
+
 ...we end up with a quite negligible value indeed.
 
 
@@ -942,7 +980,7 @@ In fact, the procedure above constitutes the first step in applying **variable s
 
   - Start with the full model (in our case, *model_total*), thus incorporating all the regressors in the data (in our case, *TV*, *radio* and *newspaper*);
   
-  - Run a least squares fitting for this full model and then discard the **least** significant regressor, namely, that  associated to the parameter displaying the larger *p*-value in the corresponding $\mathfrak t$-test (in our case, *newspaper*). Preferably, this should be accompanied by an examination of the confidence intervals for the involved parameters;
+  - Run a least squares fitting for this full model and then discard the **least** significant regressor, namely, that  associated to the parameter displaying the largest *p*-value in the corresponding $\mathfrak t$-test (in our case, *newspaper*). Preferably, this should be accompanied by an examination of the confidence intervals for the involved parameters in order to ensure that the chosen regressor has indeed the largest *p*-value in a statistically significant way;
   
   - Fit the reduced  model (in our case, *model_partial*) and iterate the previous step by removing one regressor at a time up to the point in which some pre-assigned **stopping rule** is reached (usually, when all *p*-values are strictly less than an acceptable significance level, say *0.05*).
   
@@ -995,7 +1033,7 @@ final_table %>%
 
 This indeed shows that:
 
-   - removing *newspaper* from the full model (*model_total*) is justified (in fact, it is the only regressor whose coefficient has a *p*-value larger then *0.05*);
+   - removing *newspaper* from the full model (*model_total*) is justified (in fact, it is the only regressor whose coefficient has a *p*-value larger than *0.05*);
    
    - the reduced model (*model_partial*) already meets the stopping rule (as all of its coefficients already have associated *p*-values less than *0.05*)
 
@@ -1068,7 +1106,7 @@ We immediately see that, under the usual *95%* threshold, $x_{22:{\rm radio\time
 
   - **Difficulty in Interpretation:** The coefficients for *main* are supposed to represent the effect of a one-unit increase in *main* while holding all the remaining coefficients, in particular *main^2*, constant, which is at least logically awkward. 
 
-We may remedy this by using the *poly()* function, which, by default, doesn’t just calculate *main* and *main^2* but instead creates a new set of variables that are orthogonal (i.e., perfectly uncorrelated) to each other and still retaining the linear and quadratic information from the original main variables. This solves the problems mentioned above, as the new predictors are uncorrelated by design:
+We may remedy this by using the *poly()* function, which, by default, doesn’t just calculate *main* and *main^2* but instead creates a new set of variables that are orthogonal (i.e., perfectly uncorrelated) to each other and still retains the linear and quadratic information from the original *main* variables. This solves the problems mentioned above, as the new predictors are uncorrelated by design:
 
    - **Stable and Independent Coefficients:** Because the terms are uncorrelated, the coefficient estimated for the linear component is independent of the coefficient estimated for the quadratic component. In particular, adding the quadratic term to the model will not change the coefficient of the linear term, which is a huge advantage for model building, as it allows us to test the contribution of each polynomial degree in a clean way;
 

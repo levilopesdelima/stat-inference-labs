@@ -10,13 +10,13 @@ bibliography: "feyn-notes.bib"
 
 #### Explaining the lab
  
-In this lab we illustrate the efficiency of the celebrated James-Stein estimator, which is known to beat the sample mean for samples following a multivariate  normal distribution (with $p\geq 3$ parameters) whose variance $\sigma^2$ is assumed to be known (for simplicity). We carry out this in two manifestations:
+In this lab we illustrate the performance of the celebrated **James-Stein estimator**, which is known to beat the **sample mean** for samples following a multivariate  normal distribution (with $p\geq 3$ parameters) whose variance $\sigma^2$ is assumed to be known (for simplicity). We carry out this in two manifestations:
 
   - we revisit the famous analysis of the baseball batting averages data set in [@efron1977stein] first by shrinking toward the origin (with a somewhat irrelevant gain in performance) and then by shrinking toward the **grand mean** (as they did, with a substantial gain taking place).
   
   - we repeat the experiment, but this type with randomly generated data wrapped up in a R function depending on the relevant parameters ($p$, $n$, $\mu$ and $\sigma^2$), which can be chosen at will. 
 
-All the math needed to understand the analysis may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes").
+All the math needed to understand the analysis may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes"); see also [@james1961estimation] for the original paper.
 
 #### A glimpse at the theory
 
@@ -31,7 +31,7 @@ of a random sample $X_j\sim \psi$, $j=1,\cdots,n$, with each $X_j$ being a **rea
 for at least the following honorable reasons:
 
   - $\mathbb E(\overline X_n)=\mu$, which means that $\overline X_n$ is **unbiased** (on average it already hits the target);
-  - as a function of the sample size, $\overline X_n$ is **consistent** in the sense that it converges to $\mu$ as $n\to +\infty$, with the convergence being at least in probability (this is the **Law of Large Numbers**, already know to J. Bernoulli);
+  - as a function of the sample size, $\overline X_n$ is **consistent** in the sense that it converges to $\mu$ as $n\to +\infty$, with the convergence being at least in probability (this is the **Law of Large Numbers**, already know to **J. Bernoulli**);
   - it is **asymptotically normal** in the sense that, as $n\to +\infty$, 
 \[
 \sqrt{n}\left(\overline X_n-\mu\right)\to Z, \quad (\textrm{in distribution})
@@ -40,8 +40,8 @@ with $Z$ being a random variable following a specific normal distribution: $Z\si
 \[
 \sigma^2=\int_{-\infty}^{+\infty}(x-\mu)^2\psi(x)dx
 \]
-is the population **variance** (this is the **Central Limit Theorem**, already known to P.-S. Laplace);
-  - it has the **minimal** variance among all **linear** and **unbiased** estimators of $\mu$ (this is a rather especial case of the famous **Gauss-Markov theorem** in Linear Regression, so it was certainly already known to K.F. Gauss). 
+is the population **variance** (this is the **Central Limit Theorem**, already known to **P.-S. Laplace**);
+  - it has the **minimal** variance among all **linear** and **unbiased** estimators of $\mu$ (this is a rather especial case of the famous **Gauss-Markov theorem** in Linear Regression, so it was certainly already known to **K.F. Gauss**). 
 
   
 For **any** estimator $\widehat\mu$ of $\mu$ let us define its **mean squared error** (MSE) by
@@ -66,13 +66,13 @@ Although linearity and unbiasedness might be too restrictive assumptions, we cal
 
   - if the population is **normal** (that is, $\psi=\mathcal N(\mu,\sigma^2)$) then $\overline X_n$ is **admissible** in the sense that it has the least MSE among **all** estimators of $\mu$ (not necessarily linear or unbiased).
   
-This is a nice result indeed, which if combined with the fact that $\overline X_n$ is the **maximum likelihood** (ML) estimator for $\mu$ (in case $\psi$ is normal) only attests in favor the outstanding properties of this classical estimator.
+This is a nice result indeed, which if combined with the fact that $\overline X_n$ is the **maximum likelihood** (ML) estimator for $\mu$ (again, in case $\psi$ is normal) only attests in favor of the outstanding properties of this classical estimator.
 
-Now, it came as a great surprise to the statistical world when W. James and C. Stein [@james1961estimation] showed that the sample mean, despite still being unbiased and ML, fails to be admissible for a sample $X_j\sim\mathcal N({\mu},\sigma^2{\rm Id}_p)$ following a **multivariate**  normal distribution with $p\geq 3$. To substantiate their claim, they exhibited the **James-Stein** estimator
+Now, it came as a great surprise to the statistical world when W. James and C. Stein [@james1961estimation] showed that the sample mean, despite still being unbiased and ML, fails to be admissible for a sample $X_j\sim\mathcal N({\mu},\sigma^2{\rm Id}_p)$ following a **multivariate**  normal distribution with $p\geq 3$. To substantiate their claim, they exhibited the **James-Stein estimator**
 \[
 \widehat\mu_{JS}=\left(1-\frac{(p-2)\sigma^2/n}{\|\overline X_n\|^2}\right)\overline X_n,
 \]
-which was shown to satisfy ${\rm mse}(\widehat\mu_{JS})<{\rm mes}(\overline X_n)$. This shocking result, which acts by promoting a  **shrinkage** of the supposedly natural estimator, represented a paradigm shift in Statistics which directly led to the development of regularization techniques like **Ridge** and **Lasso**, which are indispensable tools for modern Data Science and Machine Learning. The main message here is that by introducing a small amount of bias into the relevant estimate (by pulling it away from its observed value), a greater reduction in variance is achieved, resulting in a lower **total risk** (as measured by MSE). This seems to defy logic and common sense, but our simulation below will show this paradox in action, thus confirming that strange phenomena await when handling high dimensional data. 
+which was shown to satisfy ${\rm mse}(\widehat\mu_{JS})<{\rm mes}(\overline X_n)$. This shocking result, which acts by promoting a  **shrinkage** of the supposedly natural estimator $\overline X_n$, represented a paradigm shift in Statistics directly leading to the development of regularization techniques like **Ridge** and **Lasso**, which are indispensable tools for modern **Data Science** and **Machine Learning**. The main message here is that by introducing a small amount of bias into the relevant estimate (by pulling it away from its observed value), a greater reduction in variance is achieved, resulting in a lower **total risk** (as measured by MSE). This seems to defy logic and common sense, but our simulation below will show this paradox in action, thus confirming that strange phenomena await when handling high dimensional data. 
 	
 	
   
@@ -172,7 +172,7 @@ knitr::kable(performance, digits = 4,
              caption = "SSE Comparison for JS (origin) vs MLE")
 ```
 
-So what is the fuss about JS if it returned a gain of only 2.5%? Before seeking for an understanding, it is instructive to visualize the computation.
+So what is the fuss about this version of JS if it returned a gain of only 2.5%? Before seeking for an understanding, it is instructive to visualize the computation.
 
 
 ```{r}
@@ -201,7 +201,7 @@ results %>%
 ```
 
 
-Now we clearly see the issue: since we are shrinking toward the origin, the displacements (blue arrows) associated to the players on the left (with a higher observed batting average) go in the **right** direction (approaching "True Careed Avg"), whereas those associated to the players on the right (with a lower observed batting average), although less pronounced, go in the **wrong** direction, so the overall gain in performance becomes negligible. Of course, this takes place because the vector toward which we have shrunk, the origin, has nothing to do with the data. The **moral** here is: in order to obtain a better gain in performance, we must take a  **data-driven** vector as a shrinkage target, with a natural choice being $\nu_{\rm gm}=X_{\rm gm}{\bf 1}$, the vector whose entries all equal the height $X_{\rm gm}\approx 0.2654$ corresponding to the **dashed** horizontal line, as it is the **grand mean**, the average of the entries in the ``Observed_Avg`` column (the MLE estimator). We implement this below by means of the formula 
+Now we clearly see the issue: since we are shrinking toward the origin, the displacements (blue arrows) associated to the players on the left (with a higher observed batting average) go in the **right** direction (approaching ``True Careed Avg``), whereas those associated to the players on the right (with a lower observed batting average), although less pronounced, go in the **wrong** direction, so the overall gain in performance becomes negligible. Of course, this takes place because the vector toward which we have shrunk, the origin, has nothing to do with the data. The **moral** here is: in order to obtain a better gain in performance, we must take a  **data-driven** vector as a shrinkage target, with a natural choice being $\nu_{\rm gm}=X_{\rm gm}{\bf 1}$, the vector whose entries all equal the height $X_{\rm gm}\approx 0.2654$ corresponding to the **dashed** horizontal line, as it is the **grand mean**, the average of the entries in the ``Observed_Avg`` column (the MLE estimator). We implement this below by means of the formula 
 \[
 	{\widehat{\mu}}_{JS_{\rm gm}}=\left(1-\frac{(p-3)\sigma^2}{\|\overline X_n-
 	\widehat\nu_{\rm gm}\|^2}\right)\left(\overline X_n-\nu_{\rm gm}\right)+\nu_{\rm gm},	
@@ -225,13 +225,13 @@ As usual, let us wrap the whole computation in a ``results_shr_display`` tibble 
 results_shr <- baseball_data_n %>%
   mutate(MLE_Estimate = mle_estimates,
          JS_Estimate_shr = js_estimates_shr,y_gm) 
-# ...and preparing for display (hiding two columns for better visualization)
+# ...and prepare for display (hiding two columns for better visualization)
 results_shr_display <- results_shr %>%
   select(Player, True_Avg:JS_Estimate_shr,y_gm)
 print(results_shr_display)
 ```
 
-We now clearly see a better performance, with the entries of the new JS estimator being almost the same (and quite close to the grand mean displayed in "y_gm"), but let us check this via SSE.
+We now clearly see a better performance, with the entries of the new JS estimator (``JS_Estimate_shr``) being almost the same (and quite close to the grand mean displayed in ``y_gm``), but let us check this via SSE.
 
 
 ```{r}

@@ -1,9 +1,9 @@
 {
     "id": "0732BA44",
-    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Advertising-f/advertising-f.Rmd",
+    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/Advertising-f/advertising-f.Rmd",
     "project_path": "advertising-f.Rmd",
     "type": "r_markdown",
-    "hash": "2351392400",
+    "hash": "2129412343",
     "contents": "",
     "dirty": false,
     "created": 1755751433011.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "760,77",
-        "scrollLine": "760"
+        "cursorPosition": "1106,12",
+        "scrollLine": "1103"
     },
     "folds": "",
-    "lastKnownWriteTime": 1755846525,
+    "lastKnownWriteTime": 1757839018,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1755846525483,
+    "last_content_update": 1757839018176,
     "read_only": false,
     "read_only_alternatives": []
 }

@@ -386,16 +386,16 @@ display: none;
 <strong>Johnson-Lindenstrauss Lemma</strong>, which turns out to be a
 cornerstone of high-dimensional probability and computer science,
 celebrated for its powerful and counter-intuitive result about
-dimensionality reduction. Since no complicated algorithm is required to
-find the “best” projection implementing the data reduction, as a simple
-random projection certainly works with very high probability, the lemma
-turns out to be not just a theoretical curiosity but a practical and
-efficient tool with many applications in various real-world scenarios
-such as:</p>
+<strong>dimensionality reduction</strong>. Since no complicated
+algorithm is required to find the “best” projection implementing the
+data reduction, as a simple random projection certainly works with very
+high probability, the lemma turns out to be not just a theoretical
+curiosity but a practical and efficient tool with many applications in
+various real-world scenarios such as:</p>
 <ul>
 <li><strong>Machine Learning</strong>, where it speeds algorithms whose
 implementation and efficiency rely on evaluating
-<strong>euclidean</strong> distances (such as <em>k-Nearest Neighbors
+<strong>Euclidean</strong> distances (such as <em>k-Nearest Neighbors
 (k-NN)</em> and <em>support vector machines</em>, among others).</li>
 <li><strong>Data Streaming</strong>, where it helps processing massive
 datasets not quite fitting into the available memory by still
@@ -412,7 +412,7 @@ recovering sparse signals from a small number of measurements.</li>
 <p>Let us recall the precise statement of the Johnson-Lindenstrauss
 Lemma, which says: if <span class="math inline">\(\mathcal
 C=\{x_1,\cdots,x_n\}\subset\mathbb R^d\)</span> is a collection of <span class="math inline">\(n\)</span> points then, given <span class="math inline">\(\epsilon, \delta\in(0,1)\)</span>, there exist
-<span class="math inline">\(m= O(\epsilon^{-2}\log (n/\delta))\)</span>
+<span class="math inline">\(k= O(\epsilon^{-2}\log (n/\delta))\)</span>
 and a map <span class="math inline">\(F:\mathbb R^d\to\mathbb
 R^k\)</span> such that <span class="math display">\[
         1-\epsilon\leq \frac{\|F(x_i)-F(x_j)\|^2}{\|x_i-x_j\|^2}\leq
@@ -454,7 +454,7 @@ library(htmltools)</code></pre>
 <p>In order to run a simulation for the Johnson-Lindenstrauss Lemma, we
 construct a function which generates high-dimensional data (in dimension
 <span class="math inline">\(d\)</span>), projects it down to a lower
-dimension <span class="math inline">\(k\)</span> (by means of random
+dimension <span class="math inline">\(k\)</span> (by means of a random
 <span class="math inline">\(k\times d\)</span>-matrix whose entries
 follow independent standard normals), and calculates the preservation of
 pairwise distances. We will provide the appropriate parameters</p>
@@ -517,7 +517,6 @@ jl_summary_colors &lt;- c(
   reduction = &quot;#fffacd&quot;,    
   verification = &quot;#f0fff0&quot; 
 )
-
 # This is the summary function
 summarize_jl_results &lt;- function(jl_results) {
   create_colored_block &lt;- function(full_text, color) {
@@ -527,9 +526,7 @@ summarize_jl_results &lt;- function(jl_results) {
       htmltools::htmlEscape(full_text)
     )
   }
-  
   # This provides the text content for each block 
-  
   # Block 1: Parameters
   params_text &lt;- paste(
     &quot;--- Simulation Parameters ---&quot;,
@@ -539,7 +536,6 @@ summarize_jl_results &lt;- function(jl_results) {
     paste(&quot;k-specifying constant (C):&quot;, jl_results$params$C),
     sep = &quot;\n&quot;
   )
-  
   # Block 2: Reduction
   reduction_text &lt;- paste(
     &quot;--- Dimensionality Reduction ---&quot;,
@@ -547,22 +543,18 @@ summarize_jl_results &lt;- function(jl_results) {
     sprintf(&quot;Reduction factor: %.2f-fold&quot;, jl_results$params$d / jl_results$k),
     sep = &quot;\n&quot;
   )
-  
   # Block 3: Verification
   verification_text &lt;- paste(
     &quot;--- Verification of the JL Lemma ---&quot;,
     sprintf(&quot;Percentage of pairs preserved: %.2f%%&quot;, jl_results$preservation_percentage),
     sep = &quot;\n&quot;
   )
-  
   # Convert each text block into a colored HTML block
   html_block1 &lt;- create_colored_block(params_text, jl_summary_colors[&quot;params&quot;])
   html_block2 &lt;- create_colored_block(reduction_text, jl_summary_colors[&quot;reduction&quot;])
   html_block3 &lt;- create_colored_block(verification_text, jl_summary_colors[&quot;verification&quot;])
-  
   # Combine and print the final html
   final_html &lt;- paste(html_block1, html_block2, html_block3, sep = &quot;\n&quot;)
-  
   knitr::asis_output(final_html)
 }</code></pre>
 <p>We may now run the simulation with specified parameters and print the

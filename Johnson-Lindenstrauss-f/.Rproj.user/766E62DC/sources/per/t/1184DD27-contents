@@ -12,9 +12,9 @@ bibliography: "feyn-notes.bib"
 
 #### Explaining the lab
 
-We will present below an illustrative simulation of the **Johnson-Lindenstrauss Lemma**, which turns out to be a cornerstone of high-dimensional probability and computer science, celebrated for its powerful and counter-intuitive result about dimensionality reduction. Since no complicated algorithm is required to find the "best" projection implementing the data reduction, as a simple random projection certainly works with very high probability, the lemma turns out to be not just a theoretical curiosity but a practical and efficient tool with many applications in various real-world scenarios such as:
+We will present below an illustrative simulation of the **Johnson-Lindenstrauss Lemma**, which turns out to be a cornerstone of high-dimensional probability and computer science, celebrated for its powerful and counter-intuitive result about **dimensionality reduction**. Since no complicated algorithm is required to find the "best" projection implementing the data reduction, as a simple random projection certainly works with very high probability, the lemma turns out to be not just a theoretical curiosity but a practical and efficient tool with many applications in various real-world scenarios such as:
 
-  - **Machine Learning**, where it speeds algorithms whose implementation and efficiency rely on evaluating **euclidean** distances (such as *k-Nearest Neighbors (k-NN)* and *support vector machines*,  among others).
+  - **Machine Learning**, where it speeds algorithms whose implementation and efficiency rely on evaluating **Euclidean** distances (such as *k-Nearest Neighbors (k-NN)* and *support vector machines*,  among others).
   - **Data Streaming**, where it helps processing massive datasets not quite fitting into the available memory by still maintaining a low-dimensional "sketch" of the data.
   - **Compressed Sensing**, where it plays a key role in recovering sparse signals from a small number of measurements.
 
@@ -22,7 +22,7 @@ All the math needed to understand the simulation may be found in [@delima2025pro
 
 #### A glimpse at the theory
 
-Let us recall the precise statement of the Johnson-Lindenstrauss Lemma, which says: if  $\mathcal C=\{x_1,\cdots,x_n\}\subset\mathbb R^d$ is a collection of $n$ points then, given $\epsilon, \delta\in(0,1)$, there exist $m= O(\epsilon^{-2}\log (n/\delta))$ and a map $F:\mathbb R^d\to\mathbb R^k$ such that
+Let us recall the precise statement of the Johnson-Lindenstrauss Lemma, which says: if  $\mathcal C=\{x_1,\cdots,x_n\}\subset\mathbb R^d$ is a collection of $n$ points then, given $\epsilon, \delta\in(0,1)$, there exist $k= O(\epsilon^{-2}\log (n/\delta))$ and a map $F:\mathbb R^d\to\mathbb R^k$ such that
 	\[
 		1-\epsilon\leq \frac{\|F(x_i)-F(x_j)\|^2}{\|x_i-x_j\|^2}\leq 1+\epsilon,  		
 	\]
@@ -45,7 +45,7 @@ library(htmltools)
 #### Starting the simulation
 
 In order to run a simulation for the Johnson-Lindenstrauss Lemma, we construct a function which generates high-dimensional data (in dimension $d$), projects it down to a lower
-dimension $k$ (by means of random $k\times d$-matrix whose entries follow independent standard normals), and calculates the preservation of pairwise distances. We will provide the appropriate parameters
+dimension $k$ (by means of a random $k\times d$-matrix whose entries follow independent standard normals), and calculates the preservation of pairwise distances. We will provide the appropriate parameters
 
   - the number of points $n$;
   - the original high dimension $d$;
@@ -105,7 +105,6 @@ jl_summary_colors <- c(
   reduction = "#fffacd",    
   verification = "#f0fff0" 
 )
-
 # This is the summary function
 summarize_jl_results <- function(jl_results) {
   create_colored_block <- function(full_text, color) {
@@ -115,9 +114,7 @@ summarize_jl_results <- function(jl_results) {
       htmltools::htmlEscape(full_text)
     )
   }
-  
   # This provides the text content for each block 
-  
   # Block 1: Parameters
   params_text <- paste(
     "--- Simulation Parameters ---",
@@ -127,7 +124,6 @@ summarize_jl_results <- function(jl_results) {
     paste("k-specifying constant (C):", jl_results$params$C),
     sep = "\n"
   )
-  
   # Block 2: Reduction
   reduction_text <- paste(
     "--- Dimensionality Reduction ---",
@@ -135,22 +131,18 @@ summarize_jl_results <- function(jl_results) {
     sprintf("Reduction factor: %.2f-fold", jl_results$params$d / jl_results$k),
     sep = "\n"
   )
-  
   # Block 3: Verification
   verification_text <- paste(
     "--- Verification of the JL Lemma ---",
     sprintf("Percentage of pairs preserved: %.2f%%", jl_results$preservation_percentage),
     sep = "\n"
   )
-  
   # Convert each text block into a colored HTML block
   html_block1 <- create_colored_block(params_text, jl_summary_colors["params"])
   html_block2 <- create_colored_block(reduction_text, jl_summary_colors["reduction"])
   html_block3 <- create_colored_block(verification_text, jl_summary_colors["verification"])
-  
   # Combine and print the final html
   final_html <- paste(html_block1, html_block2, html_block3, sep = "\n")
-  
   knitr::asis_output(final_html)
 }
 ```

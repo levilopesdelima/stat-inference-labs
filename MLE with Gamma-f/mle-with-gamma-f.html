@@ -383,14 +383,14 @@ population</h1>
 
 <div id="explaining-the-lab" class="section level4">
 <h4>Explaining the lab</h4>
-<p>We will present below an illustrative simulation of Maximum
-Likelihood Estimation, as applied to a population following a Gamma
-distribution. The simulation is organized as follows:</p>
+<p>We will present below an illustrative simulation of <strong>Maximum
+Likelihood Estimation</strong>, as applied to a population following a
+<strong>Gamma</strong></p>
 <ul>
 <li>We start with a Gamma distribution whose shape and rate are know
 (say, shape <span class="math inline">\(\lambda= 2.0\)</span> and rate
 <span class="math inline">\(\alpha= 0.5\)</span>), but having in mind
-that these parameters could be eventually changed in another
+that these parameters could be eventually changed in a subsequent
 simulation.</li>
 <li>A simulation is performed of a random sample of the given
 distribution (say, with <span class="math inline">\(n=50\)</span>
@@ -398,20 +398,24 @@ samples), but again having in mind that <span class="math inline">\(n\)</span> c
 simulation;</li>
 <li>A standard optimization scheme (say, <code>optim()</code>) is
 employed to numerically find the ML estimator <span class="math inline">\((\widehat\lambda,\widehat\alpha)\)</span>;</li>
-<li>We rely on asymptotic normality (with the asymptotic variance given
-by the inverse of Fisher information matrix) in order to construct large
-sample confidence intervals for the unknown parameters;</li>
+<li>We rely on <strong>asymptotic normality</strong> (with the
+asymptotic variance given by the inverse of Fisher information matrix)
+in order to construct large sample confidence intervals for the unknown
+parameters;</li>
 <li>We then compare this latter, data driven, result with the known
 values of the parameter (in our case, <span class="math inline">\(\lambda=2.0\)</span> and <span class="math inline">\(\alpha=0.5\)</span>).</li>
 </ul>
 <p>We mention that one of the reasons why we have chosen a Gamma
-population to start with has to do with the third item above, since the
+population to start with has to do with the third item above: the
 corresponding Maximum Likelihood (ML) estimator is not solvable in
-closed form, so we need to numerically solve for it, which adds an extra
-layer of difficulty to the simulation.</p>
+closed form, so we need to numerically solve for it. This not only adds
+an extra layer of difficulty to the simulation but also corresponds to
+the scenario more often occurring in practical applications of the
+method.</p>
 <p>All the math needed to understand the simulation may be found in
 <span class="citation">(<a href="#ref-delima2025probab">Lima
-2023</a>)</span>.</p>
+2023</a>)</span>; see also <span class="citation">(<a href="#ref-ferguson2017course">Ferguson 2017</a>)</span> and <span class="citation">(<a href="#ref-shao2008mathematical">Shao
+2008</a>)</span>.</p>
 </div>
 <div id="a-glimpse-at-the-theory" class="section level4">
 <h4>A glimpse at the theory</h4>
@@ -421,8 +425,8 @@ list <span class="math inline">\(\{X_j\}_{j=1}^n\)</span> of
 <span class="math inline">\(\theta\in\Theta\subset \mathbb R^p\)</span>
 is the unknown vector parameter that we intend to estimate. The
 corresponding <strong>likelihood function</strong> is the joint
-distribution of the associated random vector <span class="math inline">\(X=(X_1,\cdots,X_n)\in\mathbb R^n\)</span>, which
-is <span class="math display">\[
+distribution of the associated random vector <span class="math inline">\(X=(X_1,\cdots,X_n)\in\mathbb R^n\)</span>,<br />
+<span class="math display">\[
     L({\bf x};\theta)=\Pi_{j=1}^n\psi_\theta(x_j),
 \]</span> where <span class="math inline">\({\bf
 x}=(x_1,\cdots,x_n)\in\mathbb R^n\)</span> is a
@@ -475,8 +479,8 @@ F_{(n)}(\widehat\theta_n)^{-1}),
 \]</span> from which we can easily provide large sample confidence
 intervals for each entry of the vector parameter <span class="math inline">\(\theta\)</span> (by taking the square roots of the
 corresponding diagonal elements of the asymptotic variance matrix as a
-measure of the the spread). In case, these entries are correlated (which
-is means that <span class="math inline">\(\mathscr
+measure of the spread). In case, these entries are correlated (which
+means that <span class="math inline">\(\mathscr
 F_{(n)}(\widehat\theta_n)^{-1}\)</span> fails to be diagonal), it is
 perhaps preferable to construct confidence regions for the whole vector
 parameter <span class="math inline">\(\theta\)</span>, which can be
@@ -488,8 +492,11 @@ A(\widehat\theta_n-\theta)\sim\mathcal N(0,{\rm Id}_p)
 F_{(n)}(\widehat\theta_n)(\widehat\theta_n-\theta)
 =\|A(\widehat\theta_n-\theta)\|^2\sim\chi^2_p.
 \]</span> In other words, the quadratic form in the left-hand side is a
-pivotal quantity to which the standard method may be applied: if <span class="math inline">\(\chi^2_{p,\alpha}\)</span> is the
-<strong>quantile</strong> of <span class="math inline">\(\chi^2_p\)</span> associated to <span class="math inline">\(0&lt;\alpha&lt;1\)</span> then <span class="math display">\[
+<strong>pivotal quantity</strong> to which the standard method may be
+applied: if <span class="math inline">\(\chi^2_{p,\alpha}\)</span> is
+the <strong>quantile</strong> of <strong>chi-square</strong>
+distribution <span class="math inline">\(\chi^2_p\)</span> associated to
+<span class="math inline">\(0&lt;\alpha&lt;1\)</span> then <span class="math display">\[
 P\left(
 (\widehat\theta_n-\theta)^t\mathscr
 F_{(n)}(\widehat\theta_n)(\widehat\theta_n-\theta)\leq
@@ -514,7 +521,8 @@ separate confidence intervals for the entries of <span class="math inline">\(\th
 distribution</strong> <span class="math display">\[
 \psi(x;\theta)=
 \Gamma_{\lambda,\alpha}(x)=\frac{\alpha^\lambda}{\Gamma(\lambda)}x^{\lambda-1}e^{-\alpha
-x}{\bf 1}_{(0,+\infty)}(x), \quad x\in\mathbb R.
+x}{\bf 1}_{(0,+\infty)}(x), \quad x\in\mathbb R, \quad
+\theta=(\lambda,\alpha).
 \]</span> We recall that if <span class="math inline">\(Y\sim\Gamma_{\lambda,\alpha}\)</span> then <span class="math display">\[
 \mathbb E(Y)=\frac{\lambda}{\alpha},\quad {\rm
 var}(Y)=\frac{\lambda}{\alpha^2},
@@ -527,7 +535,7 @@ l({\bf
 x};\theta)=n\left(\lambda\ln\alpha-\ln\Gamma(\lambda)+(\lambda-1)\overline{\ln
 x}-\alpha\overline{x}\right),
 \]</span> where <span class="math inline">\(\overline{\ln x}\)</span> is
-the mean of <span class="math inline">\((\ln x_1,\cdots,\ln
+the arithmetic mean of <span class="math inline">\((\ln x_1,\cdots,\ln
 x_n)\)</span>; recall that <span class="math inline">\(x_j&gt;0\)</span>
 for each <span class="math inline">\(j\)</span>. Hence, the score vector
 is <span class="math display">\[
@@ -550,9 +558,9 @@ x}\\
 \]</span> Note that trying to find a solution for this system in closed
 form is out of question so a possible strategy here (which we adopt
 below) is simply to forget about the system and use our favorite
-optimization package to find <span class="math inline">\(\widehat\theta\)</span>. In any case, with the ML
-estimator so determined, we may proceed to compute the associated Fisher
-information matrix: <span class="math display">\[
+optimization package to find <span class="math inline">\(\widehat\theta\)</span>. With the ML estimator so
+determined, we may proceed to compute the associated Fisher information
+matrix: <span class="math display">\[
 \mathscr F_{(n)}(\theta)=n
 \left(
 \begin{array}{cc}
@@ -563,7 +571,7 @@ information matrix: <span class="math display">\[
 \]</span> It is not hard to check that <span class="math inline">\(\det
 \mathscr
 F_{(1)}(\theta)=(\lambda\psi_1(\lambda)-1)/\alpha^2&gt;0\)</span>, so we
-we finally obtain asymptotic normality for <span class="math inline">\(\widehat\theta_n\)</span>: <span class="math display">\[
+finally obtain asymptotic normality for <span class="math inline">\(\widehat\theta_n\)</span>: <span class="math display">\[
 \sqrt{n}
 \left(
 \left(
@@ -716,7 +724,7 @@ parameters in terms of the moments:</p>
 <pre class="r"><code>sample_mean &lt;- mean(sim_data)
 sample_var &lt;- var(sim_data)
 
-# this are the  sample correspondents of the expressions above giving the parameters in terms of the moments
+# this are the *sample* correspondents of the expressions above giving the parameters in terms of the moments
 start_shape &lt;- sample_mean^2 / sample_var
 start_rate &lt;- sample_mean / sample_var
 
@@ -830,9 +838,9 @@ kable(results_summary_rate, digits = 4, caption = table_caption_rate)</code></pr
 <p>We may now play around a bit by choosing other values for the true
 parameters (<span class="math inline">\(\lambda\)</span>, <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(n\)</span>). We can do this either by replacing
 these values in the first code chunk above and running the whole
-sequence of chunks or by wrapping the whole content of the chunks in a
-single function, say <code>run_gamma_mle_simulation_rate()</code>, which
-is the route we shall take.</p>
+sequence of chunks or by wrapping up the whole content of the chunks in
+a single function, say <code>run_gamma_mle_simulation_rate()</code>,
+which is the route we shall take.</p>
 <pre class="r"><code>run_gamma_mle_simulation_rate &lt;- function(true_shape, true_rate, n, conf_level = 0.95, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
   sim_data &lt;- rgamma(n, shape = true_shape, rate = true_rate)
@@ -1244,9 +1252,17 @@ together, summarized by the ellipse).</p>
 <div id="references" class="section level4 unnumbered">
 <h4 class="unnumbered">References</h4>
 <div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-ferguson2017course" class="csl-entry">
+Ferguson, Thomas S. 2017. <em>A Course in Large Sample Theory</em>.
+Routledge.
+</div>
 <div id="ref-delima2025probab" class="csl-entry">
 Lima, Levi Lopes de. 2023. <span>“<span class="nocase">Probability,
 Estimation and Stochastic Calculus</span>.”</span> <a href="https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view" class="uri">https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view</a>.
+</div>
+<div id="ref-shao2008mathematical" class="csl-entry">
+Shao, Jun. 2008. <em>Mathematical Statistics</em>. Springer Science
+&amp; Business Media.
 </div>
 </div>
 </div>
