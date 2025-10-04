@@ -623,11 +623,13 @@ least squares linear model (which confirms that spending with
 incorporating interactions of the remaining regressors (<em>TV</em> and
 <em>radio</em>) up to second order, as we find that this quadratic model
 is statistically more significant than the original strictly linear
-model. In particular, this quadratic enhancement of the model in
-principle allows us to numerically optimize the <strong>mean
-response</strong> for <em>sales</em> for a given value of the total
-expenditure <em>TV+radio</em>, at least if we remain in the
-<strong>interpolation range</strong> covered by the data.</p>
+model. In particular, this quadratic enhancement of the model, although
+not as interpratable as the linear version, in principle allows us to
+numerically optimize the <strong>mean response</strong> for
+<em>sales</em> for a given value of the total expenditure
+<em>TV+radio</em>, at least if we remain in the <strong>interpolation
+range</strong> covered by the data, thus providing a substantial gain in
+predictive power.</p>
 <p>All the math needed to understand the analysis may be found in <span class="citation">(<a href="#ref-delima2025probab">Lima 2023</a>)</span>,
 which is available <a href="https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view" title="my notes">here</a>.</p>
 </div>
@@ -2133,10 +2135,10 @@ F-statistic:  2740 on 5 and 194 DF,  p-value: &lt; 2.2e-16
 </div>
 <p>We should be aware, however, that using orthogonal polynomials
 changes the interpretation of the individual coefficients, as they no
-longer correspond to the likes of <em>main</em> and <em>main^2</em>
-anymore. On the other hand, as it is clearly seen in the summaries
-above, the overall model fit (<em>R</em>-squared, <em>F</em>-statistic)
-and the fitted values of <em>model_poly_orth</em> are identical to their
+longer correspond to the likes of <em>main</em> and <em>main^2</em>. On
+the other hand, as it is clearly seen in the summaries above, the
+overall model fit (<em>R</em>-squared, <em>F</em>-statistic) and the
+fitted values of <em>model_poly_orth</em> are identical to their
 counterparts in <em>model_full_raw</em>, with its raw, collinear terms.
 We find it convenient to append a couple of brief remarks justifying
 these claims on theoretical grounds:</p>
@@ -2466,7 +2468,7 @@ reduced_model
 </tr>
 </tbody>
 </table>
-<p>…so we see that, as far as the standard stopping rule for for
+<p>…so we see that, as far as the standard stopping rule for
 <strong>backward selection</strong> goes, we may stop here (all
 <em>p</em>-values of the reduced model are much smaller that
 <em>0.05</em>). Let us additionally run the corresponding ANOVA:</p>
@@ -2485,9 +2487,9 @@ Therefore, we must switch to the simpler one <em>model_sub</em>, thus
 confirming that <em>poly(radio, 2)</em> was not a relevant predictor
 indeed.</p>
 <p>And how this final quadratic model <em>model_sub</em> behaves in
-terms of explanatory/predictive power as compared to the previous linear
+terms of statistical significance as compared to the previous linear
 model <em>model_partial</em>?</p>
-<p>As for explanation, we may run the corresponding ANOVA…</p>
+<p>In this regard, we may run the corresponding ANOVA…</p>
 <pre class="r"><code>anova(model_partial,model_sub)</code></pre>
 <pre><code>## Analysis of Variance Table
 ## 
@@ -2594,7 +2596,12 @@ print(results_table_short)</code></pre>
 ## 15 150    25 15.22219 15.08881 15.35557</code></pre>
 <p>…to check that, apparently, the maximum for <em>sales</em> (on
 average) is about <em>20.0</em> and takes place somewhere around
-<em>(TV,radio)=(85,90)</em>.</p>
+<em>(TV,radio)=(85,90)</em>. This output clearly confirms the well-known
+<strong>trade-off</strong> between interpretability and prediction when
+climbing up in hierarchy of regression models: by passing to the
+quadratic model, we have been able to substantially improve the
+prediction at the expense of turning it much less interpretable <span class="citation">(<a href="#ref-lou2012intelligible">Lou, Caruana, and
+Gehrke 2012</a>)</span>.</p>
 <p>We may complement this rather satisfactory analysis in many ways:</p>
 <ul>
 <li><p>we may estimate the <strong>response</strong> itself for
@@ -2625,8 +2632,14 @@ James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
 Springer.
 </div>
 <div id="ref-delima2025probab" class="csl-entry">
-Lima, Levi Lopes de. 2023. <span>“<span class="nocase">Probability,
-Estimation and Stochastic Calculus</span>.”</span> <a href="https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view" class="uri">https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view</a>.
+Lima, Levi de. 2023. <span>“<span class="nocase">Probability, Estimation
+and Stochastic Calculus</span>.”</span> <a href="https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view" class="uri">https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view</a>.
+</div>
+<div id="ref-lou2012intelligible" class="csl-entry">
+Lou, Yin, Rich Caruana, and Johannes Gehrke. 2012. <span>“Intelligible
+Models for Classification and Regression.”</span> In <em>Proceedings of
+the 18th ACM SIGKDD International Conference on Knowledge Discovery and
+Data Mining</em>, 150–58.
 </div>
 </div>
 </div>
