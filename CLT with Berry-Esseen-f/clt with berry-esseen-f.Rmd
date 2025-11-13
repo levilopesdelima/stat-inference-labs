@@ -5,15 +5,17 @@ date: "2025-08-05"
 output:
   html_document: default
 link-citations: yes
-bibliography: "feyn-notes.bib"
+bibliography: "prob_notes.bib"
 ---
 
 #### Details about the lab
 
 Here we will provide a few simulations in order to illustrate the validity of a fundamental result in Probability Theory, namely, the **Central Limit Theorem** (CLT). After plotting the CDFs (cummulative distribution functions) and PDFs (probability density functions) of the tree parent distributions to be used as "initial configurations" (**uniform**, **exponential** and **Gamma**), which allows us to appreciate their theoretical distinctions (both in **shape** and **skewness**), we proceed to run simulations based on a R function which generates the plots describing the convergence (not only at the PDF but, more importantly, at the CDF level) and also annotates them with key statistics, specially the standard deviation, which we adopt as a measure of convergence toward a normal and hence may be used to interpret how the parameters affect the outcome. In order to better grasp how the normal approximation depends so heavily on the shape of the parent distribution, we run another simulation (this time only for the **uniform** and the **exponentional**) in which the whole process is re-examined in the light of the celebrated **Berry-Esseen theorem**, a key result formalizing what has already been observed visually in our previous simulation: the rate of convergence of the sample mean to a normal distribution is fundamentally governed by the skewness of the original population (as measured by its **shape factor**).
 
+All the math needed to understand the analysis may be found in [@delima2025probab]. Updates and corrections of this text may also be found in this repo (see the file "prob-notes-levi-arxiv-ff.pdf").
 
-All the math needed to understand the simulation may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes").
+
+
 
 
 #### A glimpse at the theory

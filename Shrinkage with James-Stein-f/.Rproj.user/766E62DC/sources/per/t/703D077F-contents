@@ -5,7 +5,7 @@ date: "2025-08-17"
 output: 
     html_document: default
 link-citations: yes
-bibliography: "feyn-notes.bib"
+bibliography: "prob_notes.bib"
 ---
 
 #### Explaining the lab
@@ -16,7 +16,7 @@ In this lab we illustrate the performance of the celebrated **James-Stein estima
   
   - we repeat the experiment, but this type with randomly generated data wrapped up in a R function depending on the relevant parameters ($p$, $n$, $\mu$ and $\sigma^2$), which can be chosen at will. 
 
-All the math needed to understand the analysis may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes"); see also [@james1961estimation] for the original paper.
+All the math needed to understand the analysis may be found in [@delima2025probab]. Updates and corrections of this text may also be found in this repo (see the file "prob-notes-levi-arxiv-ff.pdf"); see also [@james1961estimation] for the original paper.
 
 #### A glimpse at the theory
 

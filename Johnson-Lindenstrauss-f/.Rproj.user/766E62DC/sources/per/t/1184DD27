@@ -3,7 +3,7 @@
     "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/Johnson-Lindenstrauss-f/johnson-lindenstrauss-f.Rmd",
     "project_path": "johnson-lindenstrauss-f.Rmd",
     "type": "r_markdown",
-    "hash": "1719967110",
+    "hash": "2625401062",
     "contents": "",
     "dirty": false,
     "created": 1755848795028.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "141,23",
-        "scrollLine": "132"
+        "cursorPosition": "18,117",
+        "scrollLine": "15"
     },
     "folds": "",
-    "lastKnownWriteTime": 1758448525,
+    "lastKnownWriteTime": 1763077455,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1758448525459,
+    "last_content_update": 1763077455715,
     "read_only": false,
     "read_only_alternatives": []
 }

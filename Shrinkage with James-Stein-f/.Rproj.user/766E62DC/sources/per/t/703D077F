@@ -3,7 +3,7 @@
     "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/Shrinkage with James-Stein-f/shrinkage with James-Stein.Rmd",
     "project_path": "shrinkage with James-Stein.Rmd",
     "type": "r_markdown",
-    "hash": "441632796",
+    "hash": "3762447880",
     "contents": "",
     "dirty": false,
     "created": 1755862288191.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "233,160",
-        "scrollLine": "227"
+        "cursorPosition": "21,0",
+        "scrollLine": "15"
     },
     "folds": "",
-    "lastKnownWriteTime": 1758452548,
+    "lastKnownWriteTime": 1763077865,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1758452548760,
+    "last_content_update": 1763077865269,
     "read_only": false,
     "read_only_alternatives": []
 }
