@@ -22,7 +22,7 @@ We will present below an illustrative simulation of **Maximum Likelihood Estimat
   
 We mention that one of the reasons why we have chosen a Gamma population to start with has to do with the third item above: the corresponding Maximum Likelihood (ML) estimator is not solvable in closed form, so we need to numerically solve for it. This not only adds an extra layer of difficulty to the simulation but also corresponds to the scenario more often occurring in practical applications of the method.   
 
-All the math needed to understand the analysis may be found in [@delima2025probab]. Updates and corrections of this text may also be found in this repo (see the file "prob-notes-levi-arxiv-ff.pdf"); see also [@ferguson2017course] and [@shao2008mathematical]. 
+All the math needed to understand the analysis may be found in [@delima2025probab]; updates and corrections of this text may also be found in this repo (check the file "prob-notes-levi-arxiv-ff.pdf"). See also [@ferguson2017course] and [@shao2008mathematical]. 
 
 #### A glimpse at the theory
 

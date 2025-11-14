@@ -15,7 +15,7 @@ This data set displays *200* observations of the *sales* (in thousands of units)
 quadratic model is statistically more significant than the original strictly linear model. In particular, this quadratic enhancement of the model, although not as interpratable as the linear version, in principle allows us to numerically optimize the **mean response** for *sales* for a given value of the total expenditure *TV+radio*, at least if we remain in the **interpolation range** covered by the data, thus providing a substantial gain in predictive power. 
 
 
-All the math needed to understand the analysis may be found in [@delima2025probab]. Updates and corrections of this text may also be found in this repo (see the file "prob-notes-levi-arxiv-ff.pdf").
+All the math needed to understand the analysis may be found in [@delima2025probab]; updates and corrections of this text may also be found in this repo (check the file "prob-notes-levi-arxiv-ff.pdf").
 
 
 #### A glimpse at the theory

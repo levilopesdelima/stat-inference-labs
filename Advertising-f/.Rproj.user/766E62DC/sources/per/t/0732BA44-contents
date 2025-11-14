@@ -5,17 +5,17 @@ date: "2025-07-29"
 output:
   html_document: default
 link-citations: yes
-bibliography: "feyn-notes.bib"
+bibliography: "prob_notes.bib"
 ---
 
 #### Describing the lab
 
 We revisit the data set *Advertising.csv* available [here](https://www.statlearning.com/ "ISLRv2 homepage") and perform the corresponding analysis following the guidelines suggested in  [@james2013introduction, chap. 3]. 
 This data set displays *200* observations of the *sales* (in thousands of units) of a certain good together with the corresponding expenditures (in thousands of dollars) distributed between three types of media (*TV*, *radio* and *newspaper*), thus forming a **design matrix** of size *200x4*. The central problem here is to check whether any of these media somehow influences the sales and to what extent. We examine this by first applying **backward selection** to the fitted least squares linear model (which confirms that spending with *newspaper* fails to be statistically significant) and then incorporating interactions of the remaining regressors (*TV* and *radio*) up to second order, as we find that this 
-quadratic model is statistically more significant than the original strictly linear model. In particular, this quadratic enhancement of the model in principle allows us to numerically optimize the **mean response** for *sales* for a given value of the total expenditure *TV+radio*, at least if we remain in the **interpolation range** covered by the data. 
+quadratic model is statistically more significant than the original strictly linear model. In particular, this quadratic enhancement of the model, although not as interpratable as the linear version, in principle allows us to numerically optimize the **mean response** for *sales* for a given value of the total expenditure *TV+radio*, at least if we remain in the **interpolation range** covered by the data, thus providing a substantial gain in predictive power. 
 
 
-All the math needed to understand the analysis may be found in [@delima2025probab], which is available [here](https://drive.google.com/file/d/1kgsn95hrqW-zVhsVfMvmMP0aabRCtCeP/view "my notes").
+All the math needed to understand the analysis may be found in [@delima2025probab]. Updates and corrections of this text may also be found in this repo (see the file "prob-notes-levi-arxiv-ff.pdf").
 
 
 #### A glimpse at the theory
@@ -1048,7 +1048,7 @@ Here we examine this by starting with
 
 
 \[
-{\bf y}_{:\rm sales}=\beta_0+\beta_1x_{1:{\rm TV}}+\beta_2x_{2:{\rm radio}}+\beta_{12}x_{12:{\rm TV\times sales}}+{\bf e},
+{\bf y}_{:\rm sales}=\beta_0+\beta_1x_{1:{\rm TV}}+\beta_2x_{2:{\rm radio}}+\beta_{12}x_{12:{\rm TV\times radio}}+{\bf e},
 \]
 
 which incorporates the interaction regressor $x_{12}=x_1x_2$ to *model_partial*. 
@@ -1086,7 +1086,7 @@ print_coeffs_with_ci(model_partial)
 \[
 {\bf y}_{:\rm sales}=\beta_0
 +\beta_1x_{1:{\rm TV}}+\beta_2x_{2:{\rm radio}}
-+\beta_{12}x_{12:{\rm TV\times sales}}
++\beta_{12}x_{12:{\rm TV\times radio}}
 +\beta_{11}x_{11:{\rm TV\times TV}}
 +\beta_{22}x_{22:{\rm radio\times radio}}
 +{\bf e}.
@@ -1119,7 +1119,7 @@ model_poly_orth <- lm(sales ~ TV:radio + poly(TV, 2) + poly(radio, 2), data = da
 summary_with_colors(model_poly_orth)
 ```
 
-We should be aware, however, that using orthogonal polynomials changes the interpretation of the individual coefficients, as they no longer correspond to the likes of *main* and  *main^2* anymore. On the other hand, as it is clearly seen in the summaries above, the overall model fit (*R*-squared, *F*-statistic) and the fitted values of *model_poly_orth* are identical to their counterparts in *model_full_raw*, with its raw, collinear terms. We find it convenient to append a couple of brief remarks justifying these claims on theoretical grounds:
+We should be aware, however, that using orthogonal polynomials changes the interpretation of the individual coefficients, as they no longer correspond to the likes of *main* and  *main^2*. On the other hand, as it is clearly seen in the summaries above, the overall model fit (*R*-squared, *F*-statistic) and the fitted values of *model_poly_orth* are identical to their counterparts in *model_full_raw*, with its raw, collinear terms. We find it convenient to append a couple of brief remarks justifying these claims on theoretical grounds:
 
    - when passing from one model to the other, the design matrix is right multiplied by a non-singular *(p+1)x(p+1)* matrix $M$, precisely $\mathfrak x_{\rm ortho}=\mathfrak x_{\rm raw}M$, and since the hat matrix of a model turns out to be insensitive to this kind of linear transformation, we conclude that both $\widehat{\bf y}$ and $\widehat{\bf e}$ remain unchanged (which is nice for **goodness of fit**).  
    
@@ -1238,7 +1238,7 @@ final_table %>%
            background = "#F4EAD9")
 ```
 
-...so we see that, as far as the standard stopping rule for for **backward selection** goes, we may stop here (all *p*-values of the reduced model are much smaller that *0.05*).
+...so we see that, as far as the standard stopping rule for **backward selection** goes, we may stop here (all *p*-values of the reduced model are much smaller that *0.05*).
 Let us additionally run the corresponding ANOVA:
 
 ```{r}
@@ -1247,9 +1247,9 @@ anova(model_sub, model_poly_manual)
 
 Since the *p*-value is high (*~0.43*), the null hypothesis should **not** be rejected so there is no significant difference in the explanatory power of the two models. Therefore, we must switch to the simpler one *model_sub*, thus confirming that *poly(radio, 2)* was not a relevant predictor indeed.
 
-And how this final quadratic model *model_sub* behaves in terms of explanatory/predictive power as compared to the previous linear model *model_partial*?
+And how this final quadratic model *model_sub* behaves in terms of statistical significance as compared to the previous linear model *model_partial*?
 
-As for explanation, we may run the corresponding ANOVA...
+In this regard, we may run the corresponding ANOVA...
 
 ```{r}
 anova(model_partial,model_sub)
@@ -1322,7 +1322,7 @@ print(results_table_short)
 
 ```
 
-...to check that, apparently, the maximum for *sales* (on average) is about *20.0* and takes place somewhere around *(TV,radio)=(85,90)*. 
+...to check that, apparently, the maximum for *sales* (on average) is about *20.0* and takes place somewhere around *(TV,radio)=(85,90)*. This output clearly confirms the well-known **trade-off** between interpretability and prediction when climbing up in hierarchy of regression models: by passing to the quadratic model, we have been able to substantially improve the prediction at the expense of turning it much less interpretable [@lou2012intelligible].   
 
 We may complement this rather satisfactory analysis in many ways:
 

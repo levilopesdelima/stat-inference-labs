@@ -3,7 +3,7 @@
     "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/CLT with Berry-Esseen-f/clt with berry-esseen-f.Rmd",
     "project_path": "clt with berry-esseen-f.Rmd",
     "type": "r_markdown",
-    "hash": "3039881992",
+    "hash": "2663856736",
     "contents": "",
     "dirty": false,
     "created": 1755761742689.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "17,0",
+        "cursorPosition": "14,157",
         "scrollLine": "13"
     },
     "folds": "",
-    "lastKnownWriteTime": 1763077293,
+    "lastKnownWriteTime": 1763078616,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1763077294024,
+    "last_content_update": 1763078617023,
     "read_only": false,
     "read_only_alternatives": []
 }

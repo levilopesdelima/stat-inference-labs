@@ -18,7 +18,7 @@ We will present below an illustrative simulation of the **Johnson-Lindenstrauss 
   - **Data Streaming**, where it helps processing massive datasets not quite fitting into the available memory by still maintaining a low-dimensional "sketch" of the data.
   - **Compressed Sensing**, where it plays a key role in recovering sparse signals from a small number of measurements.
   
-All the math needed to understand the analysis may be found in [@delima2025probab]. Updates and corrections of this text may also be found in this repo (see the file "prob-notes-levi-arxiv-ff.pdf").  
+All the math needed to understand the analysis may be found in [@delima2025probab]; updates and corrections of this text may also be found in this repo (check the file "prob-notes-levi-arxiv-ff.pdf").  
 
 
 
