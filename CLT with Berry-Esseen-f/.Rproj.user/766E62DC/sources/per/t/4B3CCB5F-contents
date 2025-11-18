@@ -32,7 +32,7 @@ Under these conditions, CLT says that $Z_n\stackrel{d}{\to}Z$, where $Z\sim\math
 \[
 F_{X_n}\to \Phi, 
 \]
-where in general $F_X:\mathbb R\to[0,1]$ is the cumulative distribution function (CDF) of $X$, so in partickular,  
+where in general $F_X:\mathbb R\to[0,1]$ is the cumulative distribution function (CDF) of $X$, so in particular,  
 \[
 \Phi(x):=F_Z(x)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^xe^{-t^2/2}dt. 
 \]
@@ -449,11 +449,11 @@ We now see in all three plots the blue step-function (Empirical CDF) hugging the
 
 #### Simulating CLT with a view toward Berry-Esseen
 
-As a final simulation, we now seek to explain how the **skewness** of the parent distributions influences the convergence rate to a normal. The key theoretical tool is the celebrated **Berry-Esseen theorem**, which says that under the conditions of CLT, and assuming further that the **third centered moment** $\rho:=\mathbb E(|X_n-\mu|^3)$ is finite as well, there holds, for any $x\in\mathbb R$ and $n\geq 1$, 
+As a final simulation, we now seek to explain how the **skewness** of the parent distributions influences the convergence rate to a normal. The key theoretical tool is the celebrated **Berry-Esseen theorem**, which says that under the conditions of CLT, with $\mathbb E(X_j)=0$, ${\rm var}(X_j)=\sigma^2$ and assuming further that the **third centered moment** $\rho:=\mathbb E(|X_n-\mu|^3)$ is finite as well, there holds, for any $x\in\mathbb R$ and $n\geq 1$, 
 \[
 \sup_{x\in\mathbb R}\left|F_{n}(x)-\Phi(x)\right|\leq \frac{C\varepsilon}{\sqrt{n}}, 
 \]
-where $F_n=F_{X_n}$ and $\varepsilon=\rho/\sigma^3$ is the **standardized skewness** (or **shape factor**) of the parent distribution. The value of the universal constant $C$
+where $F_n=F_{\sqrt{n}X_n/\sigma}$ and $\varepsilon=\rho/\sigma^3$ is the **standardized skewness** (or **shape factor**) of the parent distribution. The value of the universal constant $C$
  (the Berry-Esseen constant) has been refined over the years, with modern bounds placing it around $0.4748$. Thus, apart from $C$ and the expected term $1/\sqrt{n}$ involving the sample size, the rate of convergence is theoretically determined by $\varepsilon$. Clearly, this key result goes a long way toward explaining **why** the quality of the normal approximation depends so heavily on the shape of the parent distribution.
  
  

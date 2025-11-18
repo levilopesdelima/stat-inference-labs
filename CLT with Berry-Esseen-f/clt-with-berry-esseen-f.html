@@ -426,7 +426,7 @@ one has the pointwise convergence <span class="math display">\[
 F_{X_n}\to \Phi,
 \]</span> where in general <span class="math inline">\(F_X:\mathbb
 R\to[0,1]\)</span> is the cumulative distribution function (CDF) of
-<span class="math inline">\(X\)</span>, so in partickular,<br />
+<span class="math inline">\(X\)</span>, so in particular,<br />
 <span class="math display">\[
 \Phi(x):=F_Z(x)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^xe^{-t^2/2}dt.
 \]</span> Put in another way, there holds the following asymptotic limit
@@ -869,13 +869,14 @@ normal distribution, as predicted by the CLT.</p>
 <strong>skewness</strong> of the parent distributions influences the
 convergence rate to a normal. The key theoretical tool is the celebrated
 <strong>Berry-Esseen theorem</strong>, which says that under the
-conditions of CLT, and assuming further that the <strong>third centered
-moment</strong> <span class="math inline">\(\rho:=\mathbb
+conditions of CLT, with <span class="math inline">\(\mathbb
+E(X_j)=0\)</span>, <span class="math inline">\({\rm
+var}(X_j)=\sigma^2\)</span> and assuming further that the <strong>third
+centered moment</strong> <span class="math inline">\(\rho:=\mathbb
 E(|X_n-\mu|^3)\)</span> is finite as well, there holds, for any <span class="math inline">\(x\in\mathbb R\)</span> and <span class="math inline">\(n\geq 1\)</span>, <span class="math display">\[
 \sup_{x\in\mathbb R}\left|F_{n}(x)-\Phi(x)\right|\leq
 \frac{C\varepsilon}{\sqrt{n}},
-\]</span> where <span class="math inline">\(F_n=F_{X_n}\)</span> and
-<span class="math inline">\(\varepsilon=\rho/\sigma^3\)</span> is the
+\]</span> where <span class="math inline">\(F_n=F_{\sqrt{n}X_n/\sigma}\)</span> and <span class="math inline">\(\varepsilon=\rho/\sigma^3\)</span> is the
 <strong>standardized skewness</strong> (or <strong>shape
 factor</strong>) of the parent distribution. The value of the universal
 constant <span class="math inline">\(C\)</span> (the Berry-Esseen
