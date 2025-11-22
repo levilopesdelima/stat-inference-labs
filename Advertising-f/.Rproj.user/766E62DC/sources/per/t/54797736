@@ -3,7 +3,7 @@
     "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/Advertising-f/advertising-f.Rmd",
     "project_path": "advertising-f.Rmd",
     "type": "r_markdown",
-    "hash": "3698577377",
+    "hash": "1807413131",
     "contents": "",
     "dirty": false,
     "created": 1759645719309.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "17,200",
-        "scrollLine": "14"
+        "cursorPosition": "12,11",
+        "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1763078527,
+    "lastKnownWriteTime": 1763800590,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1763078527120,
+    "last_content_update": 1763800590095,
     "read_only": false,
     "read_only_alternatives": []
 }

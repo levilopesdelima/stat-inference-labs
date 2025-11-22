@@ -1,0 +1,315 @@
+---
+title: "Shrinkage with Lasso"
+author: "Levi Lopes de Lima"
+date: "2025-11-22"
+output:
+  html_document: default
+link-citations: yes
+bibliography: "prob_notes.bib"
+---
+
+#### Explaining the lab
+
+In this lab we illustrate the phenomenon of shrinkage in the setting of LASSO estimation. This celebrated procedure allows for the implementation  of **variable selection** in a linear model when the number of features ($p$) is of the same order or even much larger than the number of observations ($n$): as explained below in the theoretical piece, these are regimes in which the standard methods of linear algebra and statistics fail to work!
+
+Instead of working with real-workd data, we prefer here to explain the method by means of simulated data, as this turns the usage of this lab both reproducible and flexible.  
+
+We carry out this in two iterations:
+
+  -  we first implement the simulation of a linear model with $p=20$ and $n=100$ in which only a few features are statistically significant (say, **four** of them). Even though we work here in the classical setting ($p<n$) and, moreover, we know beforehand which predictors are relevant, the aim  is to check the effectiveness of LASSO as a variable selector. We emphasize that the simulation only applies to the design matrix ${\bf x}$ (chosen as a random matrix with standard normal entries) with the responses $y_i$  being computed from ${\bf x}$ and the  prescribed (sparse) coefficient vector $\beta$ by means of the linear model formula below (with $e_i\sim\mathcal N(0,0.25)$).
+  -  next we explore the fact that the underlying parameters of the simulation above have been wrapped in an appropriate R function (and hence may be modified at will) in order to simulate a data set with $p=150$ and $n=100$ to which we apply the LASSO.
+
+All the math needed to understand the simulations in this lab may be found in [@delima2025probab]; see also [@hastie2015statistical] for a full account of sparsity methods in Statistical Learning.
+
+#### A glimpse at the theory
+
+As explained in [@delima2025probab], the usage of the ordinary least squares (OLS) in the classical setting hinges on two distinct, but related, perspectives:
+
+  - (algebraic perspective) as it is clear from its expression, namely, 
+ \[
+ \widehat\beta= ({\bf x}^\perp{\bf x})^{-1}{\bf x}^\perp {\bf y},
+ \]
+ the effective computation of the OLS estimator 
+ associated to the linear model
+ \[
+ y_i=\sum_{j=1}^p{x}_{ij}\beta_j+e_i,\quad, i=1,\cdots,n,  
+\]
+involves the inversion of the $n\times n$ **Gram matrix** ${\bf x}^\perp{\bf x}$, which is usually ensured by assuming that the column space $C({\bf x})$ of the $n\times p$ **design matrix** ${\bf x}=(x_{ij})$ has maximal dimension, so that $C({\bf x})\equiv \mathbb R^p$[^1].
+ 
+ [^1]:For simplicity here we set the intercept $\beta_0=0$, so that $\mathfrak x$ in (@delima2025probab) gets replaced by ${\bf x}$.
+
+  - (probabilistic perspective) the qualification of $\widehat\beta$ as an efficient estimator for the unknown parameter $\beta$ relies on the normality assumption for the error, ${\bf e}\sim\mathcal N(\vec{0},\sigma^2{\rm Id}_n)$, as this guarantees not only that $\widehat\beta$ is the associated maximum likelihood estimator, so that 
+  \[
+ \widehat\beta={\rm argmin}_\beta\,\frac{1}{2}\|{\bf y}-{\bf x}\beta\|^2, 
+\]
+but also that the **residual vector** $\widehat{\bf e}={\bf y}-{\bf x}\widehat\beta$, a crucial ingredient in the analysis of the inferential properties of $\widehat\beta$, lies 
+in $C({\bf x})^\perp\equiv \mathbb R^{n-p}$ (as an orthogonal projection of ${\bf y}$) and follows the multivariate normal $\mathcal N(\vec{0},\sigma^2{\rm Id}_{n-p})$ (as an orthogonal projection of ${\bf e}$); recall that ${\bf y}-{\bf e}\in C({\bf x})$ by the linear model equation above. 
+
+Taken together, these perspectives provide the remarkable balance between **prediction** and **interpretability** which is so characteristic of OLS. But notice that this rather satisfactory state of affairs only works fine under the classical assumption $p\leq n$, which leaves open the question of how to proceed when the data fail to meet this requirement, which is the case commonly occurring in modern Data Science. 
+Among the many shrinkage methods available to handle this issue, it turns out that the **LASSO estimator**,
+\[
+\widehat\beta_L={\rm argmin}_\beta\,\frac{1}{2}\|{\bf y}-{\bf x}\beta\|^2+\lambda\|\beta\|_1,
+\]
+stands out as a most notable course of action. 
+
+In fact, even when 
+$p<n$ but the number of predictors is large, the $\ell^1$ penalty acts as an automatic variable selector: among the many competing directions in the parameter space, only those with enough empirical support survive the mnimization, while the remaining coefficients are driven exactly to zero. In this regime, the LASSO is best viewed as a principled alternative to ad-hoc stepwise procedures (as the **backward selection** scheme used in the companion lab "Advertising"), with the additional advantage of being expressed as the solution of a convex optimization problem.
+
+On the other hand, if  $p>n$ the role of the method becomes even more structural. Here the OLS problem is no longer identifiable, and infinitely many coefficient vectors interpolate the data. The $\ell^1$ penalty resolves this indeterminacy by enforcing **sparsity**: the estimator searches for the simplest explanation compatible with the data, effectively reducing the dimensionality of the model while still allowing for stable estimation and prediction. In this sense, the same geometric mechanism that produces variable selection in the moderately high-dimensional case becomes a necessity in the genuinely high-dimensional one.
+
+Thus, whether used as a selection tool in large but classical problems or as a full estimation principle in regimes where 
+$p\gg  n$, the LASSO is unified by a single idea: the geometry of the $\ell^1$ ball singles out sparse solutions in a transparent and mathematically controlled way. The purpose of this lab is precisely to illustrate the usage of the LASSO in both instances.
+
+#### Starting the lab
+
+As usual, we start by calling the pertinent R packages...
+
+```{r}
+library(tidyverse)
+library(glmnet)
+```
+
+#### Iteration 1: Simulating a sparse linear model (with $p<n$) and applying the LASSO 
+
+To make our examples both reproducible and flexible, we'll wrap the data simulation logic in a reusable R function, *simulate_lasso_data()*, as this allows us to easily change parameters like the number of observations (*n_obs*) or predictors (*n_pred*).
+
+```{r}
+simulate_lasso_data <- function(n_obs = 100, n_pred = 20, seed = 123) {
+  set.seed(seed)
+  
+  # Generate the predictor matrix from a standard normal distribution
+  x <- matrix(rnorm(n_obs * n_pred), nrow = n_obs, ncol = n_pred)
+
+  # Create the true coefficients vector in a robust way, first zeroing all them and then assigning a few non-zero coefficients
+  true_coefficients <- rep(0, n_pred)
+  true_coefficients[1] <- 2.5
+  true_coefficients[2] <- -1.8
+  true_coefficients[3] <- 3.1
+  true_coefficients[4] <- -4.3
+
+  # Generate the response variable y: y = X * beta + noise
+  y <- x %*% true_coefficients + rnorm(n_obs, sd = 0.5)
+
+  # Return all relevant objects in a named list
+  return(list(x = x, y = y, true_coefficients = true_coefficients))
+}
+
+# Next we call the previously defined function to generate our data: we use the default values (100 observations, 20 predictors, seed = 123), but these inputs can be changed at will
+sim_data <- simulate_lasso_data()
+
+# Extract the components from the list for use in later chunks
+x <- sim_data$x
+y <- sim_data$y
+true_coefficients <- sim_data$true_coefficients
+
+cat(paste("Simulated data created using a function with", 
+          nrow(x), "observations and", ncol(x), "predictors.\n"))
+```
+
+With the simulated data at hand, from this point on we pretend that they have been obtained elsewhere, so we fit an OLS to them in the usual manner (which we can do because $p=20<n=100$). 
+
+```{r}
+ols_model <- lm(y ~ x)
+summary(ols_model)
+```
+
+As expected, besides confirming that the only statistically significant predictors are $x_1$, $x_2$, $x_{3}$ and $x_{4}$, the associated summary provides an almost perfect goodness-of-fit for the model: $R^2=0.995$ and a very small $p$-value for the corresponding $F$-statistics. Another way of checking this is to fit a partial OLS model with only the relevant predictors ...
+
+```{r}
+ols_model_adj <- lm(y ~ x[,1] + x[,2] + x[,3] + x[,4])
+summary(ols_model_adj)
+```
+
+... and run an ANOVA to compare the models:
+
+```{r}
+anova(ols_model_adj,ols_model)
+```
+
+...so the large $p$-value ($\approx 0.825$) indicates that the models are statistically indistinguishable. 
+
+Similarly to what has been done in a companion lab ("Advertising"), the natural way to proceed from here would be to apply **backward selection** to the full model by removing an irrelevant predictor at a time, a daunting task indeed given the large value of $p$ (one would need **16** steps to carry this over!). Instead, with our predictor matrix ${\bf x}$ and response vector ${\bf y}$ at hand, we will directly check whether LASSO can recover the true coefficients we prescribed, correctly identifying that most predictors are irrelevant indeed.
+
+We use the ``glmnet()`` function to fit the model: setting *alpha = 1* specifies that we want to perform LASSO regression.
+
+
+```{r}
+lasso_model <- glmnet(x, y, alpha = 1)
+print(lasso_model)
+```
+
+
+The output shows that ``glmnet()`` doesn't just fit one model, but an entire path of models for 66 different values of $\lambda$ (the regularization penalty). Notice how ``Df`` (degrees of freedom, or the number of non-zero coefficients) starts high when $\lambda$ is small and decreases to zero as $\lambda$ gets larger and the penalty becomes stronger.
+It turns out that a **path plot** is the best way to visualize how LASSO shrinks coefficients towards (and eventually to) zero as the penalty $\lambda$ increases.
+
+```{r}
+plot(lasso_model, xvar = "lambda", label = TRUE)
+```
+
+
+Each line represents one of the 20 predictor variables. The Y-axis shows the coefficient's value, and the X-axis shows the minus log of the penalty term $\lambda$. As we move from left to right (decreasing penalty), more variables enter the model with non-zero coefficients. As we move from right to left (increasing penalty), coefficients are "shrunk" to zero. The numbers at the top indicate how many variables are in the model at that point. We can clearly see that only a few variables have large, persistent coefficients.
+
+Fitting a path of models is great, but we need to choose the single best value for $\lambda$. For this we use $k$-fold **cross-validation** with $k=10$, which helps us finding the $\lambda$ that minimizes prediction error on unseen data; see [@chetverikov2021cross] for a formal justification of this crucial step.
+
+```{r}
+cv_lasso <- cv.glmnet(x, y, alpha = 1, nfolds = 10)
+plot(cv_lasso)
+```
+
+##### A theoretical digression
+
+It is worthwhile to explain how this plot is obtained in general. We start by randomly splitting the data set $\{({\bf x}_i),{\bf y}_i\}_{i=1}^n$ into approximately $k$ equal-sized groups, called **folds**. Now, for each value of $\lambda$ we proceed as follows:
+
+  - Hold out fold 1 as a test set and fit the LASSO using the remaining $k-1$ folds. 
+  - Predict the responses of the held-out fold using the fitted model.
+  - Compute ${\rm mse}_1(\lambda)$, the mean squared error, on that fold.
+  - Repeat the steps above for folds 2,3,..., k.
+  
+Since every fold plays the role of “unseen data” exactly once, we should average the $k$ separated prediction errors,
+\[
+CV(\lambda)=\frac{1}{k}\sum_{l=1}^k{\rm mse}_l(\lambda),
+\]
+so the plot shows this cross-validated error versus $-\log(\lambda)$, with the two vertical dashed lines indicating two common choices for the optimal $\lambda$:
+
+  - ``lambda.min``: The $\lambda$ that gives the absolute lowest cross-validated error, corresponding to the dashed line on the right.
+
+  - ``lambda.1se``: The $\lambda$ from the most parsimonious (simplest) model whose error is within one standard error of the minimum, corresponding to the dashed line on the left. This is often preferred as it yields a simpler model with statistically similar performance.
+
+
+With the theoretical explanation on how $k$-fold cross-validation produces the previous plot out of the way,
+we now extract the optimal $\lambda$ values identified by this process. 
+
+```{r}
+# This extracts the lambda value corresponding to the minimum cross-validated error.
+lambda_min <- cv_lasso$lambda.min
+# This extracts the lambda value corresponding to the "one-standard error" rule.
+lambda_1se <- cv_lasso$lambda.1se
+
+cat("Optimal lambda (lambda.min):", lambda_min, "\n")
+cat("Parsimonious lambda (lambda.1se):", lambda_1se, "\n")
+
+
+```
+
+...and use them to view the final model coefficients (note that $\lambda=e^{-\alpha}$, where $\alpha\approx 3.464$ and $\alpha\approx 2.631$ correspond to the values where the dashed vertical lines cut the horizontal axis). 
+
+We start with the model using ``lambda_min``:
+
+
+```{r}
+coef_min <- coef(lasso_model, s = lambda_min)
+#cat("\nCoefficients using lambda.min:\n")
+print(coef_min)
+```
+
+This model has 8 non-zero coefficients. It correctly identified our true predictors (V1, V2, V3, V4) with coefficients close to their true values (2.5, -1.8, 3.1, -4.3) and also included a few other variables with very small coefficients (hence, an almost effective shrinkage).
+
+In order to focus on relevant information in the previous summary, we  use a function to extract the **non-zero** coefficients of the model...
+
+```{r}
+print_nonzero_coefs <- function(coef_mat) {
+  # coef_mat: output of coef(glmnet_object, s = ...)
+  
+  coef_vec <- as.numeric(coef_mat)
+  names(coef_vec) <- rownames(coef_mat)
+  
+  nz_coef <- coef_vec[coef_vec != 0]
+  
+  print(nz_coef)
+}
+```
+
+
+...which may be called as follows:
+
+```{r}
+coef_min_nz <- coef(lasso_model, s = lambda_min)
+print_nonzero_coefs(coef_min_nz)
+```
+
+
+
+We now turn to ``lambda_1se``, this time using the new function ``print_nonzero_coefs()``:
+
+```{r}
+coef_1se_nz <- coef(lasso_model, s = lambda_1se)
+print_nonzero_coefs(coef_1se_nz)
+```
+
+
+This model is more parsimonious, with only 4 non-zero coefficients. When compared to the previous one, it also correctly identifies the four true predictors (up to a small error) and eliminates more of the noise variables. This demonstrates LASSO's power in feature selection. Also, this provides further justification for using the model ``ols_model_adj`` above  which, as we have seen, fits remarkably well to the data with $R^2=0.9951$ (as expected, since we created the pre-selected data ourselves from a linear model). 
+
+#### Iteration 2: Using LASSO to handle a sparse linear model (with $p>n$)
+
+We now handle examples in the truly high-dimensional regime ($p>n$). The idea is to use the already available function ``simulate_lasso_data()`` to simulate the corresponding data set:
+
+```{r}
+sim_data_new <- simulate_lasso_data(100, 150, 456)
+ 
+x <- sim_data_new$x
+y <- sim_data_new$y
+true_coefficients <- sim_data_new$true_coefficients
+
+cat(paste("Simulated data with", 
+          nrow(x), "observations and", ncol(x), "predictors.\n"))
+```
+
+```{r}
+str(sim_data_new)
+```
+
+
+Since $p=150>n=100$, it is out of question to fit an OLS to the simulated data, so we immediately pass to the LASSO. 
+
+```{r}
+lasso_model_new <- glmnet(x, y, alpha = 1)
+```
+
+We refrain from printing the quite long model summary and pass directly to the corresponding path plot... 
+
+```{r}
+plot(lasso_model_new, xvar = "lambda", label = TRUE)
+```
+
+...followed by the associated $k$-fold cross-validation (with $k=20$):
+
+```{r}
+cv_lasso_new <- cv.glmnet(x, y, alpha = 1, nfolds = 20)
+plot(cv_lasso_new)
+```
+
+We now extract the relevant pair of $\lambda$ values:
+
+
+
+```{r}
+lambda_min_new <- cv_lasso_new$lambda.min
+lambda_1se_new <- cv_lasso_new$lambda.1se
+cat("Optimal lambda (lambda.min):", lambda_min_new, "\n")
+cat("Parsimonious lambda (lambda.1se):", lambda_1se_new, "\n")
+```
+
+We now extract the non-zero coefficients of the model corresponding to ``lambda_min_new``:
+
+```{r}
+coef_min__new_nz <- coef(lasso_model_new, s = lambda_min_new)
+print_nonzero_coefs(coef_min__new_nz)
+```
+
+This models selects the significant coefficients  and shrinks most of the remaining coefficients to 0, but 17 (very small) coefficients remain, so we pass to the model corresponding to ``lambda_1se_new``:
+
+
+```{r}
+coef_1se__new_nz <- coef(lasso_model_new, s = lambda_1se_new)
+print_nonzero_coefs(coef_1se__new_nz)
+```
+
+... so that now only the four significant coefficients have survived. Note that they match their true values up to a small error, which confirms the efficiency of the LASSO as a tool which implements variable selection (via shrinkage) and restores interpretability.
+
+
+
+#### References
+
+
+
+
