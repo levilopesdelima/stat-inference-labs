@@ -1,9 +1,9 @@
 {
     "id": "4B3CCB5F",
-    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/CLT with Berry-Esseen-f/clt with berry-esseen-f.Rmd",
+    "path": "C:/Users/levil/Dropbox/A-Pesquisa/Projetos/A-Projetos-R/Projetos Git Exp/Projetos Github Working/Finalizados/CLT with Berry-Esseen-f/clt with berry-esseen-f.Rmd",
     "project_path": "clt with berry-esseen-f.Rmd",
     "type": "r_markdown",
-    "hash": "1617396752",
+    "hash": "2998486373",
     "contents": "",
     "dirty": false,
     "created": 1755761742689.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "12,194",
+        "cursorPosition": "3,21",
         "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1763800996,
+    "lastKnownWriteTime": 1764739080,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1763800996068,
+    "last_content_update": 1764739080703,
     "read_only": false,
     "read_only_alternatives": []
 }

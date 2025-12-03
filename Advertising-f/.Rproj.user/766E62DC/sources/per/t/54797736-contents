@@ -1,7 +1,7 @@
 ---
 title: "An Analysis of Adverstising.cvs (with quadratic terms)"
 author: "Levi Lopes de Lima"
-date: "2025-11-22"
+date: "`r Sys.Date()`"
 output:
   html_document: default
 link-citations: yes
