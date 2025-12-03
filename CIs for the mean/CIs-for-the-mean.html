@@ -509,11 +509,13 @@ length(x)</code></pre>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##   23.64   23.73   23.78   23.79   23.86   23.94</code></pre>
 </div>
-<div id="constructing-a-z-interval-for-the-coal-dataset-known-sigma" class="section level4">
-<h4>Constructing a z-interval for the coal dataset (known <span class="math inline">\(\sigma\)</span>)</h4>
+<div id="a-z-interval-for-the-coal-dataset-known-sigma" class="section level4">
+<h4>A z-interval for the coal dataset (known <span class="math inline">\(\sigma\)</span>)</h4>
 <p>As already remarked, the code will be wrapped in a R function with
-three parameters: the data set vector, the (known) standard deviation
-(<span class="math inline">\(\sigma\)</span>) and <span class="math inline">\(\alpha=1-\textrm{confidence level}\)</span>.</p>
+three parameters: the data set vector <code>x</code>, the (known)
+standard deviation (<span class="math inline">\(\sigma\)</span>) and
+<span class="math inline">\(\alpha=1-\textrm{confidence
+level}\)</span>.</p>
 <pre class="r"><code>#building a function for computing a z-interval (known sigma)
 ci_mean_known_sigma &lt;- function(x, sigma, alpha = 0.05) {
   # sample size and mean
@@ -717,10 +719,14 @@ length(y)</code></pre>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ## -2.5400 -0.3300  1.0600  0.8213  2.1150  4.6200</code></pre>
 </div>
-<div id="constructing-t-interval-for-the-races-data-set-unknown-sigma" class="section level4">
-<h4>Constructing t-interval for the races data set (unknown <span class="math inline">\(\sigma\)</span>)</h4>
-<p>We now proceed to the relevant code, as always wrapped in a function
-depending on two (adjustable) parameters: the data set vector and <span class="math inline">\(\alpha=1-\textrm{confidence level}\)</span>:</p>
+<div id="a-t-interval-for-the-races-data-set-unknown-sigma" class="section level4">
+<h4>A t-interval for the races data set (unknown <span class="math inline">\(\sigma\)</span>)</h4>
+<p>We now proceed to the code, as always wrapped in a function depending
+on only two (adjustable) parameters, the data set vector <code>y</code>
+and <span class="math inline">\(\alpha=1-\textrm{confidence
+level}\)</span>, as here <span class="math inline">\(\sigma\)</span> is
+unknown and should be estimated from data (the line
+<code>sd_hat_2 &lt;- sd(y)</code> in the code):</p>
 <pre class="r"><code>#building a function for computing a t-interval
 ci_mean_unknown_sigma_2 &lt;- function(y, alpha = 0.05) {
   # sample size and mean
@@ -799,13 +805,15 @@ knitr::kable(ci_table_skates, caption = &quot;Confidence Interval for races (unk
 </tr>
 </tbody>
 </table>
-<p>Since the t-interval in the first row fails to include <span class="math inline">\(0\)</span>, we may conclude that, at the 95%
+<p>Since the t-interval in the first row fails to enclose <span class="math inline">\(0\)</span>, we may argue that, at the 95%
 confidence level, the speed skaters in the outer lanes appear to have a
 real advantage. Note, however, that according to the t-interval in the
 second row, this statistical evidence disappears at the 98% confidence
-level. Thus, we may obtain seemingly conflicting results depending on
-the chosen confidence level, but there is no contradiction here, since
-this choice is inherently subjective.</p>
+level since the CI now contains <span class="math inline">\(0\)</span>,
+a possible value for the population <span class="math inline">\(\mu\)</span>. Thus, we may obtain seemingly
+conflicting results depending on the chosen confidence level, but there
+is no contradiction here, since this choice is inherently
+subjective.</p>
 </div>
 <div id="a-final-comparison" class="section level4">
 <h4>A final comparison</h4>
@@ -873,10 +881,16 @@ estimated sigma)</caption>
 </tr>
 </tbody>
 </table>
-<p>… to check that the z-interval is a bit smaller. This only confirms
-that the Student’s distribution has a slightly heavier tail than the
-normal, which implies that <span class="math inline">\(t_{n-1,\alpha/2}&gt;z_{\alpha/2}\)</span> for any
-choice of <span class="math inline">\(\alpha\)</span>, with <span class="math inline">\(t_{n-1,\alpha/2}\to z_{\alpha/2}\)</span> as <span class="math inline">\(n\to+\infty\)</span>.</p>
+<p>… to check that the z-interval is a bit smaller. This simply confirms
+that the Student t-distribution has heavier tails than the normal
+distribution, which implies <span class="math inline">\(t_{n-1,\alpha/2}&gt;z_{\alpha/2}\)</span> for any
+choice of <span class="math inline">\(\alpha\)</span>. Since <span class="math inline">\(t_{n-1,\alpha/2}\to z_{\alpha/2}\)</span> as <span class="math inline">\(n\to+\infty\)</span>, the distinction between the
+two intervals becomes negligible for large sample sizes; it is only for
+relatively small <span class="math inline">\(n\)</span> (such as <span class="math inline">\(n=23\)</span>) that the difference becomes
+appreciable.</p>
+</div>
+<div id="references" class="section level4 unnumbered">
+<h4 class="unnumbered">References</h4>
 <div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
 <div id="ref-dekking2005modern" class="csl-entry">
 Dekking, Frederik Michel. 2005. <em>A Modern Introduction to Probability

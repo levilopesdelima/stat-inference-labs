@@ -110,9 +110,9 @@ summary(x)
 
 
 
-#### Constructing a z-interval for the coal dataset (known $\sigma$)
+#### A z-interval for the coal dataset (known $\sigma$)
 
-As already remarked, the code will be wrapped in a R function with three parameters: the data set vector, the (known) standard deviation ($\sigma$) and $\alpha=1-\textrm{confidence level}$. 
+As already remarked, the code will be wrapped in a R function with three parameters: the data set vector ``x``, the (known) standard deviation ($\sigma$) and $\alpha=1-\textrm{confidence level}$. 
 
 ```{r}
 #building a function for computing a z-interval (known sigma)
@@ -276,9 +276,9 @@ summary(y)
 ```
 
 
-#### Constructing t-interval for the races data set (unknown $\sigma$)
+#### A t-interval for the races data set (unknown $\sigma$)
 
-We now proceed to the relevant code, as always wrapped in a function depending on two (adjustable) parameters: the data set vector and $\alpha=1-\textrm{confidence level}$:
+We now proceed to the code, as always wrapped in a function depending on only two (adjustable) parameters, the data set vector ``y`` and $\alpha=1-\textrm{confidence level}$, as here $\sigma$ is unknown and should be estimated from data (the line ``sd_hat_2 <- sd(y)`` in the code):
 
 ```{r}
 #building a function for computing a t-interval
@@ -333,7 +333,7 @@ ci_table_skates <- data.frame(
 knitr::kable(ci_table_skates, caption = "Confidence Interval for races (unknown sigma)")
 ```
 
-Since the t-interval in the first row fails to include $0$, we may conclude that, at the 95% confidence level, the speed skaters in the outer lanes appear to have a real advantage. Note, however, that according to the t-interval in the second row, this statistical evidence disappears at the 98% confidence level. Thus, we may obtain seemingly conflicting results depending on the chosen confidence level, but there is no contradiction here, since this choice is inherently subjective.
+Since the t-interval in the first row fails to enclose $0$, we may argue that, at the 95% confidence level, the speed skaters in the outer lanes appear to have a real advantage. Note, however, that according to the t-interval in the second row, this statistical evidence disappears at the 98% confidence level since the CI now contains $0$, a possible value for the population $\mu$. Thus, we may obtain seemingly conflicting results depending on the chosen confidence level, but there is no contradiction here, since this choice is inherently subjective.
 
 
 
@@ -363,5 +363,7 @@ ci_table_comp <- data.frame(
 knitr::kable(ci_table_comp, caption = "Comparison of Confidence Intervals for races (unknown and estimated sigma)")
 ```
 
-... to check that the z-interval is a bit smaller. This only confirms that the Student's distribution has a slightly heavier tail than the normal, which implies that  $t_{n-1,\alpha/2}>z_{\alpha/2}$ for any choice of $\alpha$, with $t_{n-1,\alpha/2}\to z_{\alpha/2}$ as $n\to+\infty$. 
+... to check that the z-interval is a bit smaller. This simply confirms that the Student t-distribution has heavier tails than the normal distribution, which implies  $t_{n-1,\alpha/2}>z_{\alpha/2}$ for any choice of $\alpha$. Since $t_{n-1,\alpha/2}\to z_{\alpha/2}$ as $n\to+\infty$, the distinction between the two intervals becomes negligible for large sample sizes; it is only for relatively small $n$ (such as $n=23$) that the difference becomes appreciable.
+
+#### References
 
