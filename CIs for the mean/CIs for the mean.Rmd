@@ -22,9 +22,9 @@ In this lab we construct two types of confidence intervals for the mean of a nor
 1. A z-interval assuming the population standard deviation is **known**.
 2. A t-interval assuming the population standard deviation is **unknown**.
 
-To make the code reusable, we encapsulate each procedure in an R function—``ci_mean_known_sigma`` and ``ci_mean_unknown_sigma_2``—whose arguments reflect the relevant parameters. We then apply these functions to a few problems from [@dekking2005modern], to which we refer for the theoretical background; see also [@delima2025probab] for further discussion.
+To make the code reusable, we encapsulate each procedure in certain R functions—``ci_mean_known_sigma`` and ``ci_mean_unknown_sigma_2``—whose arguments reflect the relevant parameters. We then apply these functions to a few problems from [@dekking2005modern], to which we refer for the theoretical background; see also [@delima2025probab] for further discussion.
 
-We also include a comparison of the two types of intervals in the special case where the sample standard deviation used in the t-interval is assumed to coincide exactly with the population standard deviation required for the corresponding z-interval. As a final theoretical bonus, we construct a confidence interval for this estimated standard deviation itself, using two-sided quantiles of the chi distribution ($\chi_{n-1}$).
+We also include a comparison of these intervals in the special case where the sample standard deviation used in the t-interval is assumed to coincide exactly with the population standard deviation required for the corresponding z-interval. As a final theoretical bonus, we construct a confidence interval for this estimated standard deviation itself, using two-sided quantiles of the chi distribution ($\chi_{n-1}$), the square root of chi-square distribution ($\chi_k^2$).
 
 
 ####  A glimpse at the theory I
@@ -33,7 +33,7 @@ Recall that a random variable $X$ is said to follow a normal (notation: $X\sim\m
 \[
 \psi_{(\mu,\sigma^2)}(x)=\frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{(x-\mu)^2}{2\sigma^2}}, \quad x\in\mathbb R.
 \]
-We recall that $\mathbb E(X)=\mu$ and ${\rm var}(X)=\sigma^2$ so the shape of $\psi_{(\mu,\sigma^2)}$, as member of this family of densities, is completely determined by these population parameters. 
+We have $\mathbb E(X)=\mu$ and ${\rm var}(X)=\sigma^2$, so the shape of $\psi_{(\mu,\sigma^2)}$, as a member of this family of densities, is completely determined by these population parameters. 
 
 We will be interested in estimating the population mean $\mu$ starting from a random sample $\{X_j\}_{j=1}^{+\infty}$ drawn from a normal population as above. As usual, we take the **sample mean**, 
 \[
@@ -76,7 +76,7 @@ We insist that this **z-interval** is an exact (not approximate) CI which holds 
 
 
 
-#### The first problem (as taken from [@dekking2005modern], page 347)
+#### The first problem (taken from [@dekking2005modern], page 347)
 
 ![](coal.jpg)
 
@@ -207,7 +207,7 @@ satisfies:
   
   - $S^2_n\stackrel{p}{\to}\sigma^2$ (which means that $S^2_n$ is **consistent** for $\sigma^2$).
 
-In particular, $S_n\stackrel{p}{\to}\sigma$  and $S_n$ is **consistent** for the standard deviation $\sigma$. It follows  that the **studentization**
+In particular, $S_n\stackrel{p}{\to}\sigma$  so that $S_n$ is **consistent** for the standard deviation $\sigma$ and hence qualifies as an estimator for $\sigma$. It follows  that the **studentization**
 \[
 T_{n-1}:=\frac{\overline X_n-\mu}{S_n/\sqrt{n}},
 \]
@@ -336,7 +336,7 @@ ci_table_skates <- data.frame(
 knitr::kable(ci_table_skates, caption = "Confidence Interval for races (unknown sigma)")
 ```
 
-Since the t-interval in the first row fails to enclose $0$, we may argue that, at the 95% confidence level, the speed skaters in the outer lanes appear to have a real advantage. Note, however, that according to the t-interval in the second row, this statistical evidence disappears at the 98% confidence level since the CI now contains $0$, a possible value for the population $\mu$. Thus, we may obtain seemingly conflicting results depending on the chosen confidence level, but there is no contradiction here, since this choice is inherently subjective.
+Since the t-interval in the first row fails to enclose $0$, we may argue that, at the 95% confidence level, the speed skaters in the outer lanes appear to have a real advantage. Note, however, that according to the t-interval in the second row, this statistical evidence disappears at the 98% confidence level since the CI now contains $0$, a possible value for the population $\mu$. Thus, we may obtain seemingly conflicting results depending on the chosen confidence level, but there is no contradiction here, since this choice of confidence level is inherently subjective.
 
 
 
@@ -366,7 +366,7 @@ ci_table_comp <- data.frame(
 knitr::kable(ci_table_comp, caption = "Comparison of Confidence Intervals for races (unknown and estimated sigma)")
 ```
 
-... to check that the z-interval is a bit smaller. This simply confirms that the Student t-distribution has heavier tails than the normal distribution, which implies  $t_{n-1,\alpha/2}>z_{\alpha/2}$ for any choice of $\alpha$. Since $t_{n-1,\alpha/2}\to z_{\alpha/2}$ as $n\to+\infty$, the distinction between the two intervals becomes negligible for large sample sizes; it is only for relatively small $n$ (such as $n=23$) that the difference becomes appreciable.
+... to check that the z-interval is a bit smaller. This simply confirms that the Student t-distribution has heavier tails than the normal distribution, which implies  $t_{n-1,1-\alpha/2}>z_{1-\alpha/2}$ for any choice of $\alpha$. Since $t_{n-1,1-\alpha/2}\to z_{1-\alpha/2}$ as $n\to+\infty$, the distinction between the two intervals becomes negligible for large sample sizes; it is only for relatively small $n$ (such as $n=23$) that the difference becomes appreciable.
 
 #### A confidence interval for the variance
 
