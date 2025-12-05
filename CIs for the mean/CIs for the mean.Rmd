@@ -22,7 +22,10 @@ In this lab we construct two types of confidence intervals for the mean of a nor
 1. A z-interval assuming the population standard deviation is **known**.
 2. A t-interval assuming the population standard deviation is **unknown**.
 
-In order to make the codes reusable, we wrap them in certain R functions depending on the relevant parameters (``ci_mean_known_sigma`` and ``ci_mean_unknown_sigma_2``), which are then applied to a couple of problems appearing in [@dekking2005modern], to which we refer for the theoretical details; see also [@delima2025probab] for further discussions on the subject.
+To make the code reusable, we encapsulate each procedure in an R function—``ci_mean_known_sigma`` and ``ci_mean_unknown_sigma_2``—whose arguments reflect the relevant parameters. We then apply these functions to a few problems from [@dekking2005modern], to which we refer for the theoretical background; see also [@delima2025probab] for further discussion.
+
+We also include a comparison of the two types of intervals in the special case where the sample standard deviation used in the t-interval is assumed to coincide exactly with the population standard deviation required for the corresponding z-interval. As a final theoretical bonus, we construct a confidence interval for this estimated standard deviation itself, using two-sided quantiles of the chi distribution ($\chi_{n-1}$).
+
 
 ####  A glimpse at the theory I
 
@@ -77,7 +80,7 @@ We insist that this **z-interval** is an exact (not approximate) CI which holds 
 
 ![](coal.jpg)
 
-Since $\sigma=0.1$ is known, we may implement the theoretical formula for the the z-interval above to check the computation in the end of the example. 
+Since $\sigma=0.1$ is known, we may implement the theoretical formula for the z-interval above to check the computation in the end of the example. 
 
 
 #### Reading the data (coal)
@@ -337,7 +340,7 @@ Since the t-interval in the first row fails to enclose $0$, we may argue that, a
 
 
 
-#### A final comparison
+#### A comparison
 
 Here we pretend that the estimated value for the standard deviation $\sigma\approx 1.78$ (appearing in the first column above) is the true population value $\sigma$ and use it to compute the corresponding z-interval by means of the function ``ci_mean_known_sigma()`` previously constructed.
 
@@ -364,6 +367,100 @@ knitr::kable(ci_table_comp, caption = "Comparison of Confidence Intervals for ra
 ```
 
 ... to check that the z-interval is a bit smaller. This simply confirms that the Student t-distribution has heavier tails than the normal distribution, which implies  $t_{n-1,\alpha/2}>z_{\alpha/2}$ for any choice of $\alpha$. Since $t_{n-1,\alpha/2}\to z_{\alpha/2}$ as $n\to+\infty$, the distinction between the two intervals becomes negligible for large sample sizes; it is only for relatively small $n$ (such as $n=23$) that the difference becomes appreciable.
+
+#### A confidence interval for the variance
+
+In the previous paragraph we used the estimated value for $\sigma$ in order to compare the two kinds of intervals, but the question remains: how good is this approximation? To check this, we need a confidence interval for $\sigma$, the population standard deviation around the point estimation $\sigma=1.78$.
+
+#### A glimpse at the theory III
+
+We will make use of an already mentioned fact:
+
+- If $X_j\sim\mathcal N(\mu,\sigma^2)$ then $\frac{n-1}{\sigma^2}S_n^2\sim\chi^2_{n-1}$, the **chi-square** distribution of $n-1$ degrees of freedom.
+
+We recall that if $X\sim\chi^2_k$, the **chi-square distribution** with $k\geq 1$ degrees of freedom, then $dP_X=\psi_Xdx$, with the corresponding pdf $\psi_X$ being given by 
+\[
+\psi_X(x)=\frac{1}{2^{k/2}\Gamma(k/2)}x^{{\frac{k}{2}-1}}e^{-x/2}{\bf 1}_{(0,+\infty)}(x), \quad x\in\mathbb R.
+\]
+It follows from [@delima2025probab], Remark 2.16, that $Y=\sqrt{X}\sim\chi_k$, 
+the **chi distribution** with $k\geq 1$ degrees of freedom, where $dP_Y=\psi_Ydx$, with the corresponding pdf $\psi_Y$ being given by 
+\[
+\psi_Y(x)=\frac{1}{2^{\frac{k}{2}-1}\Gamma(k/2)}x^{k-1}e^{-x^2/2}{\bf 1}_{(0,+\infty)}(x), \quad x\in\mathbb R.
+\]
+Hence, if 
+\[
+F_k(x)=\int_0^x\psi_Y(t)dt, \quad x>0,
+\]
+is the associated cdf we define, for any $0<\alpha<1/2$, the corresponding **quantiles** 
+\[
+\chi_{k,\alpha/2}=F_k^{-1}(\alpha/2)< \chi_{k,1-\alpha/2}=F_k^{-1}(1-\alpha/2).
+\]
+As can be easily checked, 
+\[
+\chi_{k,\delta}=\sqrt{\chi_{k,\delta}^2}\,\,\,\,\textrm{for any}\,\,\,\,\delta,
+\]
+where $\chi_{k,\delta}^2$  is the  corresponding quantile for the chi-square.
+
+With this notation (for $k=n-1$), and defining 
+\[
+{\mathscr S}_n=\sqrt{n-1}S_n,
+\]
+it follows from the fact above that
+\[
+P\left(\frac{\mathscr S_n}{\chi_{n-1,1-\alpha/2}}\leq \sigma\leq \frac{\mathscr S_n}{\chi_{n-1,\alpha/2}}\right)=
+P\left(\chi_{n-1,\alpha/2}\leq\frac{\mathscr S_n}{\sigma}\leq \chi_{n-1,1-\alpha/2}\right)=1-\alpha, 
+\]
+which can be rewritten as a confidence interval for $\sigma$:
+\[
+\sigma\in\left[\frac{\mathscr S_n}{\chi_{n-1,1-\alpha/2}},\frac{\mathscr S_n}{\chi_{n-1,\alpha/2}}\right]\,\,\,\textrm{with prob.}= 1-\alpha
+\]
+
+
+
+#### Constructing a confidence interval around the estimated standard deviation
+
+We may now easily implement the confidence interval above ...
+
+```{r}
+ci_sd <- function(y, alpha = 0.05) {
+  # sample size 
+  m     <- length(y) # as before
+  # sample standard deviation
+  sd_hat_2 <- sd(y) # as before
+  scr_sd <- sqrt(m-1) * sd_hat_2 # chi critical values (here we use that they may be computed from the chi-squared critical values, which are available in R, by taking a square root)
+  chi_crit_lower <- sqrt(qchisq(alpha/2,df=m-1))
+  chi_crit_upper <- sqrt(qchisq(1-alpha/2,df=m-1))
+  # finally, the interval endpoints
+  chi_lower <- scr_sd / chi_crit_upper
+  chi_upper <- scr_sd / chi_crit_lower
+  # return as a list
+  return(list(
+    m        = m,
+    sd_hat   = sd_hat_2,
+   # scr       = scr_sd,
+    lower    = chi_lower,
+    upper    = chi_upper
+  ))
+}
+# evaluation of the function at a 95% confidence level
+ci_sd_95 <- ci_sd(y,0.05)
+```
+
+...and print the result in a table:
+
+```{r}
+chi_ci_table <- data.frame(
+  Method        = c("Chi-interval for sigma at 95%"),
+  CI_Lower      = round(c(ci_sd_95$lower), 4),
+  Estimation    = round(c(ci_sd_95$sd_hat), 4),
+  CI_Upper      = round(c(ci_sd_95$upper), 4)
+)
+knitr::kable(chi_ci_table,caption = "Chi-interval for the estimated standard deviation")
+```
+
+We therefore see that the resulting confidence interval is somewhat conservative, and the assumption underlying the comparison above should consequently be taken with a grain of salt.
+
+
 
 #### References
 
