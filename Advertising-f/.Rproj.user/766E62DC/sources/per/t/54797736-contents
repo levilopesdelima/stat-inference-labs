@@ -90,7 +90,7 @@ From this, the standard inferential package for the least squares estimate $\wid
 
    - **confidence intervals** for the parameters: 
     \[
-   	\beta_i\in \left[\widehat \beta_i\mp \mathfrak t_{n-p-1,\delta/2}\widehat\sigma\sqrt{\mathfrak s_{ii}}\right] 	\,{\rm with}\,{\rm prob.}\,1-\delta,
+   	\beta_i\in \left[\widehat \beta_i\mp \mathfrak t_{n-p-1,1-\delta/2}\widehat\sigma\sqrt{\mathfrak s_{ii}}\right] 	\,{\rm with}\,{\rm prob.}\,1-\delta,
    	\]
 as displayed in the standard R summary;
 
@@ -98,7 +98,7 @@ as displayed in the standard R summary;
 	 \[
 	 	{{\textsf x}}^T\beta\in\left[
 		{{\textsf x}}^T{\widehat\beta}\mp
-		{{\mathfrak{t}}}_{n-p-1,\delta/2}{\widehat\sigma}
+		{{\mathfrak{t}}}_{n-p-1,1-\delta/2}{\widehat\sigma}
 		\sqrt{{{\textsf x}}^T{{\mathfrak s}}{{\textsf x}}}
 		\right]
 		\,\,\text{with prob.}\,\,1-\delta,

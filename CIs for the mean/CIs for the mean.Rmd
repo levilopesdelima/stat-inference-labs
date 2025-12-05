@@ -60,16 +60,16 @@ is a **pivotal quantity** in the sense that its distribution does *not* depend o
 \]
 Hence, for any $0<\alpha<1$ there holds
 \[
-P\left(-z_{\alpha/2}\leq \overline Z_n\leq z_{\alpha/2} \right)=1-\alpha,
+P\left(-z_{1-\alpha/2}\leq \overline Z_n\leq z_{1-\alpha/2} \right)=1-\alpha,
 \]
 where
 \[
-z_{\alpha/2}=\Phi^{-1}\left(1-\frac{\alpha}{2}\right), \quad \Phi(x)=\int_{-\infty}^x\psi_{(0,1)}(t)dt
+z_{1-\alpha/2}=\Phi^{-1}\left(1-\frac{\alpha}{2}\right), \quad \Phi(x)=\int_{-\infty}^x\psi_{(0,1)}(t)dt
 \]
 is the **normal quantile** associated to the **confidence level** $1-\alpha$.
 Of course, we may rewrite this as a confidence interval (CI) for $\mu$:
 \[
-\mu\in\left[\overline X_n\mp z_{\alpha/2}\frac{\sigma}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}=1-\alpha.
+\mu\in\left[\overline X_n\mp z_{1-\alpha/2}\frac{\sigma}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}=1-\alpha.
 \]
 We insist that this **z-interval** is an exact (not approximate) CI which holds true for samples of any size $n$, its only drawback being that its length (twice the margin of error) depends on the (generally unknown!) standard deviation $\sigma$.
 
@@ -125,7 +125,7 @@ ci_mean_known_sigma <- function(x, sigma, alpha = 0.05) {
   meanx <- mean(x)
   # standard error under known sigma
   se <- sigma / sqrt(n)
-  # normal critical value
+  # normal critical value (quantile)
   zcrit <- qnorm(1 - alpha/2)
   # margin of error
   margin <- zcrit * se
@@ -218,7 +218,7 @@ T_{n-1}=\frac{\sigma}{S_n}\overline Z_n\stackrel{d}{\to}\mathcal N(0,1),
 
 which immediately yields an approximate **large sample** CI for $\mu$:
 \[
-\mu\in\left[\overline X_n\mp z_{\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}\approx 1-\alpha,
+\mu\in\left[\overline X_n\mp z_{1-\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}\approx 1-\alpha,
 \]
 but of course this does **not** apply to the problem at hand (because a sample with $n=23$ fails to qualify as being large!). Taking into account that 
 \[
@@ -247,7 +247,7 @@ degrees of freedom[^1].
 Leading this to the above expression for $T_{n-1}$, we immediately obtain a CI for $\mu$ which applies to the cases in which $\sigma$ is unknown:
 
 \[
-\mu\in\left[\overline X_n\mp t_{n-1,\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}= 1-\alpha,
+\mu\in\left[\overline X_n\mp t_{n-1,1-\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}= 1-\alpha,
 \]
 where $t_{n-1,\alpha/2}$ is the **Student quantile** associated to the confidence level $1-\alpha$. Note that this **t-interval** is not only exact but also applies to samples of **any** size. As we shall see below, it applies to the "races problem" displayed above. 
  
@@ -293,7 +293,7 @@ ci_mean_unknown_sigma_2 <- function(y, alpha = 0.05) {
   sd_hat_2 <- sd(y)
   # standard error
   se_2 <- sd_hat_2 / sqrt(m)
-  # Student t critical value
+  # Student t critical value (quantile)
   tcrit <- qt(1 - alpha/2, df = m - 1)
   # margin of error
   margin <- tcrit * se_2
@@ -427,7 +427,8 @@ ci_sd <- function(y, alpha = 0.05) {
   m     <- length(y) # as before
   # sample standard deviation
   sd_hat_2 <- sd(y) # as before
-  scr_sd <- sqrt(m-1) * sd_hat_2 # chi critical values (here we use that they may be computed from the chi-squared critical values, which are available in R, by taking a square root)
+  scr_sd <- sqrt(m-1) * sd_hat_2 
+  # here we determine the chi critical values, or quantiles, using that they may be computed from the chi-squared critical values, which are available in R, by taking a square root
   chi_crit_lower <- sqrt(qchisq(alpha/2,df=m-1))
   chi_crit_upper <- sqrt(qchisq(1-alpha/2,df=m-1))
   # finally, the interval endpoints

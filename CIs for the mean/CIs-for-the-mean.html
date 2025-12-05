@@ -11,7 +11,7 @@
 
 <meta name="author" content="Levi Lopes de Lima" />
 
-<meta name="date" content="2025-12-04" />
+<meta name="date" content="2025-12-05" />
 
 <title>Confidence Intervals for the Mean: Known vs Unknown Standard Deviation</title>
 
@@ -376,7 +376,7 @@ display: none;
 <h1 class="title toc-ignore">Confidence Intervals for the Mean: Known vs
 Unknown Standard Deviation</h1>
 <h4 class="author">Levi Lopes de Lima</h4>
-<h4 class="date">2025-12-04</h4>
+<h4 class="date">2025-12-05</h4>
 
 </div>
 
@@ -449,16 +449,16 @@ does <em>not</em> depend on the estimated parameter <span class="math inline">\(
 <span class="math display">\[
 \overline Z_n\sim \mathcal N(0,1).
 \]</span> Hence, for any <span class="math inline">\(0&lt;\alpha&lt;1\)</span> there holds <span class="math display">\[
-P\left(-z_{\alpha/2}\leq \overline Z_n\leq z_{\alpha/2}
+P\left(-z_{1-\alpha/2}\leq \overline Z_n\leq z_{1-\alpha/2}
 \right)=1-\alpha,
 \]</span> where <span class="math display">\[
-z_{\alpha/2}=\Phi^{-1}\left(1-\frac{\alpha}{2}\right), \quad
+z_{1-\alpha/2}=\Phi^{-1}\left(1-\frac{\alpha}{2}\right), \quad
 \Phi(x)=\int_{-\infty}^x\psi_{(0,1)}(t)dt
 \]</span> is the <strong>normal quantile</strong> associated to the
 <strong>confidence level</strong> <span class="math inline">\(1-\alpha\)</span>. Of course, we may rewrite this
 as a confidence interval (CI) for <span class="math inline">\(\mu\)</span>: <span class="math display">\[
 \mu\in\left[\overline X_n\mp
-z_{\alpha/2}\frac{\sigma}{\sqrt{n}}\right]\,\,\,\textrm{with
+z_{1-\alpha/2}\frac{\sigma}{\sqrt{n}}\right]\,\,\,\textrm{with
 prob.}=1-\alpha.
 \]</span> We insist that this <strong>z-interval</strong> is an exact
 (not approximate) CI which holds true for samples of any size <span class="math inline">\(n\)</span>, its only drawback being that its
@@ -530,7 +530,7 @@ ci_mean_known_sigma &lt;- function(x, sigma, alpha = 0.05) {
   meanx &lt;- mean(x)
   # standard error under known sigma
   se &lt;- sigma / sqrt(n)
-  # normal critical value
+  # normal critical value (quantile)
   zcrit &lt;- qnorm(1 - alpha/2)
   # margin of error
   margin &lt;- zcrit * se
@@ -658,8 +658,8 @@ T_{n-1}=\frac{\sigma}{S_n}\overline Z_n\stackrel{d}{\to}\mathcal N(0,1),
 <p>which immediately yields an approximate <strong>large sample</strong>
 CI for <span class="math inline">\(\mu\)</span>: <span class="math display">\[
 \mu\in\left[\overline X_n\mp
-z_{\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}\approx
-1-\alpha,
+z_{1-\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with
+prob.}\approx 1-\alpha,
 \]</span> but of course this does <strong>not</strong> apply to the
 problem at hand (because a sample with <span class="math inline">\(n=23\)</span> fails to qualify as being large!).
 Taking into account that <span class="math display">\[
@@ -690,7 +690,7 @@ k}\Gamma(\frac{k}{2})}\left(1+k^{-1}x^2\right)^{-\frac{k+1}{2}}.
 which <span class="math inline">\(\sigma\)</span> is unknown:</p>
 <p><span class="math display">\[
 \mu\in\left[\overline X_n\mp
-t_{n-1,\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}=
+t_{n-1,1-\alpha/2}\frac{S_n}{\sqrt{n}}\right]\,\,\,\textrm{with prob.}=
 1-\alpha,
 \]</span> where <span class="math inline">\(t_{n-1,\alpha/2}\)</span> is
 the <strong>Student quantile</strong> associated to the confidence level
@@ -743,7 +743,7 @@ ci_mean_unknown_sigma_2 &lt;- function(y, alpha = 0.05) {
   sd_hat_2 &lt;- sd(y)
   # standard error
   se_2 &lt;- sd_hat_2 / sqrt(m)
-  # Student t critical value
+  # Student t critical value (quantile)
   tcrit &lt;- qt(1 - alpha/2, df = m - 1)
   # margin of error
   margin &lt;- tcrit * se_2
@@ -956,7 +956,8 @@ deviation</h4>
   m     &lt;- length(y) # as before
   # sample standard deviation
   sd_hat_2 &lt;- sd(y) # as before
-  scr_sd &lt;- sqrt(m-1) * sd_hat_2 # chi critical values (here we use that they may be computed from the chi-squared critical values, which are available in R, by taking a square root)
+  scr_sd &lt;- sqrt(m-1) * sd_hat_2 
+  # here we determine the chi critical values, or quantiles, using that they may be computed from the chi-squared critical values, which are available in R, by taking a square root
   chi_crit_lower &lt;- sqrt(qchisq(alpha/2,df=m-1))
   chi_crit_upper &lt;- sqrt(qchisq(1-alpha/2,df=m-1))
   # finally, the interval endpoints
