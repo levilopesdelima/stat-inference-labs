@@ -1,0 +1,683 @@
+
+---
+title: "AIC Comparisons with Discrete and Continuous Examples"
+author: "Levi Lopes de Lima"
+date: "`r Sys.Date()`"
+output: 
+    html_document: default
+link-citations: yes
+bibliography: "prob_notes.bib"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+
+
+
+#### Explaining the lab
+
+Here we illustrate the **Akaike information criterion (AIC)** by comparing models fitted to the *same data set*. More precisely:
+
+- As an example in the continuous setting, the first data set (e.g. measuring the time between successive clicks of a Geiger counter) is fitted by means of both the **Exponential** and **Rayleigh** models;
+- As an example in the discrete setting, the second data set, corresponding to a simple counting experiment, is fitted by means of both the **Poisson** and **Geometric** models.
+
+As recalled in the theoretical piece below, for a model with log-likelihood $\ell(\theta)$ and $p$ free parameters, the AIC is
+\[
+\mathrm{AIC} = -2\,\ell(\widehat\theta_{ML}) + 2p,
+\]
+where $\widehat\theta_{ML}$ is the corresponding maximum likelehood estimator. 
+In both examples above, the competing models have **one parameter** ($p=1$), hence the penalty term $2p$ is the same in each pair. Therefore, within each pair, the AIC comparison is equivalent to comparing the maximized log-likelihoods: 
+\[
+\textrm{smaller AIC} \Leftrightarrow \textrm{larger}\,\, \ell(\widehat\theta).
+\]
+In words: the model with the smaller AIC is the one fitting the data better!
+
+
+
+As an added bonus, we examine the advertising data set `Advertising.csv`, previously analyzed in a companion lab, from the perspective of the AIC. Our goal is to verify that the information-theoretic approach provided by AIC reproduces the model selection obtained earlier via backward selection. We note, however, that in this setting the competing models are *nested*, so that the penalty term $2p$ in the AIC expression varies across models and therefore plays an explicit role in the comparison.
+
+##### A word of caution
+
+The theoretical basis for AIC is that, under standard regularity assumptions, it provides an (asymptotically) unbiased estimate (up to an additive constant independent of the model) of the expected Kullback–Leibler (KL) information loss incurred when using the fitted model to approximate the unknown data-generating distribution. Consequently, AIC is meaningful only in a **comparative** sense, through differences of the  values across competing models.
+In particular, in a two-model comparison such as the one considered below, the observed AIC difference $|\Delta|$ can be viewed as an approximate measure of the *relative likelihood* of the model with larger AIC versus the model with smaller AIC. This motivates the common rules of thumb for interpretation: 
+
+- $|\Delta|\lesssim 2$: the two models have similar support from the data;
+- $4\lesssim |\Delta|\lesssim 7$: the model with smaller AIC is clearly preferred;
+- $|\Delta|\gtrsim 10$: strong (often decisive) support for the model with smaller AIC.
+
+We emphasize that these cutoffs are heuristic in nature; the main point is that AIC should be used **comparatively**, not as an **absolute** measure of the information retained when fitting the data.
+
+All the math needed to understand the analysis may be found in [@delima2025probab]; updates and corrections of this text may also be found in this repo (check the file "prob-notes-levi-arxiv-ff.pdf"). See also [@burnham2013model] and [@konishi2008information] for much more on the general theory and practice of information criteria in model selection.
+
+#### A glimpse at the theory
+
+
+Consider a parametric statistical model
+\[
+X_1,\ldots,X_n\stackrel{\text{i.i.d.}}{\sim} 
+\psi_{\theta},
+\]
+where $\psi_{\theta}$ is a set of distributions parameterized by $\theta\in\Theta\subset\mathbb R^p$. We assume that the unknown data-generating density, sometimes denoted below by $\psi_{\theta_0}$, belongs to $\Theta$, so  the model is well specified. 
+As usual, we fit this model to the available data (represented by the sample $X_i$) by means of the **maximum likelihood estimator (MLE)**
+\[ 
+\widehat\theta_{ML}
+=
+\arg\max_{\theta\in\Theta}
+\sum_{i=1}^n \ln \psi_\theta(X_i).
+\]
+We recall that this estimator is **asymptotically normal** in the sense that
+\[
+\widehat\theta_{ML}\approx_{n\to+\infty}\mathcal N\left(\theta,\mathscr F_{(n)}(\theta)^{-1}\right),
+\]
+where $\mathscr F_{(n)}(\theta)$ is the **Fisher information matrix** associated to the entire sample. Taking into account that, by the Cramér-Rao information inequality, there holds
+\[
+\textrm{cov}_{\theta}(\widehat\theta)\geq \mathscr F_{(n)}(\theta)^{-1},
+\]
+for *any* **unbiased** estimator $\widehat\theta$ of $\theta$, we see why MLE is the preferable way of fitting a model to a given data set[^1].
+
+[^1]: For more on MLE, see the companion lab `MLE with Gamma-f`, available at [Github](https://github.com/levilopesdelima/stat-inference-labs).
+
+
+
+For a given $Z\sim\psi_{\theta_0}$ drawn *independently* from $X_i$, a natural measure of the predictive quality of the fitted model
+is the **expected log-likelihood**
+\[
+m(\theta)
+:=
+n\mathbb E_{Z}\left(\ln \psi_\theta(Z)\right),
+\]
+or, equivalently, the **Kullback--Leibler divergence**
+\[
+D^{KL}_{\theta_0}(\theta)
+:=\mathbb E_{\psi_0}\left(
+\ln \frac{\psi_{\theta_0}}{\psi_{\theta}}
+\right)
+=
+\mathbb E_{\psi_{\theta_0}}(\ln \psi_{\theta_0}(Z))
+-
+\frac
+{1}{n}m(\theta),
+\]
+since the first term in the right-hand side only depends on the true parameter
+In practice, $m(\theta)$ is not observable and it seems reasonable to replace it by 
+\[
+m(\widehat\theta_{ML})
+=
+n\mathbb E_{Z}\left(\ln \psi_{\widehat\theta_{ML}}(Z)\right).
+\]
+In order to further remove the stochastic dependence on the sample, we finally consider
+the
+unknown quantity $\mathbb E_X(m(\widehat\theta_{ML}))$,
+to be estimated by the purely data-driven 
+**maximized log-likelihood**
+\[
+\ell_n(\widehat\theta_{ML})
+:=
+\sum_{i=1}^n \ln  \psi_{\widehat\theta_{ML}}(X_i).
+\]
+However, since $\widehat\theta_{ML}$ is obtained by maximizing $\ell_n(\theta)$ over
+the same data, $\ell_n(\widehat\theta_{ML})$ is a *biased* estimator of $\mathbb E_X(m(\widehat\theta_{ML}))$,
+a bias which reflects the familiar phenomenon of **overfitting**.
+
+Under standard regularity conditions (in particular, making crucial use of the asymptotic normality of $\widehat\theta_{ML}$), one has the asymptotic expansion
+\[
+\mathbb E_X\left(\ell_n(\widehat\theta_{ML})\right)
+=
+\mathbb E_X(m(\widehat\theta_{ML}))
++{p}
++
+o(1),
+\qquad n\to\infty.
+\]
+Consequently,
+\[
+\ell_n(\widehat\theta_{ML})-p
+\]
+is an *asymptotically unbiased* estimator of
+$\mathbb E_X(m(\widehat\theta_{ML}))$, so that
+minimizing the **Akaike Information Criterion (AIC)**
+\[
+\textrm{AIC}(X_i\sim\psi_\theta):=-2\ell_n(\widehat\theta_{ML})+2p
+\]
+amounts to selecting the model that minimizes an estimate of the expected
+Kullback--Leibler divergence between the fitted model and the data-generating
+mechanism. This observation provides the information-theoretic justification
+of this important criterion.  
+
+#### Loading the packages  
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ellipse)
+library(patchwork)
+library(knitr)
+library(kableExtra)
+library(crayon)
+```
+
+#### Part I (continuous): Exponential vs Rayleigh
+
+We use the following sample of size $n=20$ drawn from an unknown continuous distribution:
+
+```{r data-continuous}
+x <- c(
+  0.32, 0.48, 0.51, 0.73, 0.85,
+  0.93, 1.02, 1.08, 1.12, 1.21,
+  1.34, 1.41, 1.56, 1.63, 1.78,
+  1.89, 2.05, 2.17, 2.46, 2.73
+)
+n <- length(x)
+n
+```
+
+
+We fit this data set by means of two continuous models (both uni-parametric and supported in the positive half-line).
+
+##### Model 1: Exponential $\mathrm{Exp}(\lambda)$
+
+Assume $X_1,\dots,X_n$ are i.i.d. with density
+\[
+\psi_\lambda(x)=\lambda e^{-\lambda x}, \qquad x>0,
+\]
+so that $\lambda>0$ is the unknown parameter.
+The log-likelihood is
+\[
+\ell(\lambda)=\sum_{i=1}^n(\ln\lambda-\lambda x_i)=n\ln\lambda-\lambda\sum_{i=1}^n x_i,
+\]
+and the score is 
+\[
+\ell_\lambda(\lambda)=\frac{n}{\lambda}-\sum_{i=1}^n x_i,
+\]
+so that
+the MLE is
+\[
+\widehat\lambda_{ML}=\frac{n}{\sum_{i=1}^n X_i}=\frac{1}{\overline X},
+\]
+the reciprocal of the sample mean $\overline X$.
+Hence
+\[
+\mathrm{AIC}_{\text{Exp}}=-2\,\ell(\widehat\lambda_{ML})+2.
+\]
+
+##### Model 2: Rayleigh $\mathrm{Rayleigh}(\sigma)$
+
+Assume $X_1,\dots,X_n$ are i.i.d. with density
+\[
+\psi_\sigma(x)=\frac{x}{\sigma^2}\exp\!\left(-\frac{x^2}{2\sigma^2}\right),
+\qquad x>0,
+\]
+so that $\sigma>0$ is the unknown parameter. 
+The log-likelihood is
+\[
+\ell(\sigma)=\sum_{i=1}^n \left(\log x_i - 2\log\sigma - \frac{x_i^2}{2\sigma^2}\right)
+= \sum_{i=1}^n \log x_i \;-\;2n\log\sigma\;-\;\frac{1}{2\sigma^2}\sum_{i=1}^n x_i^2,
+\]
+and the score is 
+\[
+\ell_\sigma(\sigma)=-\frac{2n}{\sigma}+\frac{1}{\sigma^3}\sum_{i=1}^n x_i^2, 
+\]
+so that the 
+MLE is
+\[
+\widehat\sigma_{ML}=\sqrt{\frac{1}{2n}\sum_{i=1}^n X_i^2}.
+\]
+Thus
+\[
+\mathrm{AIC}_{\text{Ray}}=-2\,\ell(\widehat\sigma_{ML})+2.
+\]
+
+#### Computations in R
+
+We now implement the theoretical computations above in R (recall that $p=1$).
+
+```{r aic-continuous}
+# This computes the AIC for the Exponential Model 
+lambda_hat <- 1/mean(x)
+loglik_exp <- n*log(lambda_hat) - lambda_hat*sum(x) 
+aic_exp <- -2*loglik_exp + 2  
+
+# This computes the AIC for the Rayleigh Model
+sigma_hat <- sqrt(sum(x^2)/(2*n))
+loglik_ray <- sum(log(x)) - 2*n*log(sigma_hat) - sum(x^2)/(2*sigma_hat^2)  
+aic_ray <- -2*loglik_ray + 2 
+
+# This extracts the AIC difference (Exponential minus Rayleigh)
+delta_cont <- aic_exp - aic_ray
+
+# This saves the computations above in a list...
+exp_vs_ray <- list(
+  n = n,
+  mean = mean(x),
+  lambda_hat = lambda_hat,
+  sigma_hat = sigma_hat,
+  loglik_exp = loglik_exp,
+  loglik_ray = loglik_ray,
+  AIC_exp = aic_exp,
+  AIC_ray = aic_ray,
+  delta_AIC = delta_cont
+)
+#... which we may print
+print(exp_vs_ray)
+```
+
+We may now easily interpret the result of the previous computation. Recall the rules of thumb mentioned above, adapted to the present setting: If $\Delta = \mathrm{AIC}_{\text{Exp}}-\mathrm{AIC}_{\text{Ray}}$ then
+
+- $\Delta>0\Longrightarrow \mathrm{AIC}_{\text{Ray}}<\mathrm{AIC}_{\text{Exp}}$, so the **Rayleigh** model is preferred.
+- $\Delta<0\Longrightarrow \mathrm{AIC}_{\text{Exp}}<\mathrm{AIC}_{\text{Ray}}$, so the **exponential** model is preferred.
+
+Since the observed value was $\Delta=14.0832>0$, we may declare, based on the available data, that the **Raylegh model** is preferred to make inference (with a quite strong information-theoretic evidence indeed). This means that we should use the formula above for $\psi_\sigma$, with $\sigma=\widehat\sigma_{ML}=1.068516$, as the best available approximation to the unknown distribution generating the data. 
+
+
+#### Part II (discrete): Poisson vs Geometric
+
+For the discrete case, we use a sample of counts (nonnegative integers). 
+
+```{r data-discrete}
+y <- c(0,1,0,2,1,3,2,0,1,4,2,1,0,2,3,1,1,2,0,5)
+m <- length(y)
+m
+```
+
+#### Model 1: Poisson $\mathrm{Pois}(\rho)$
+
+Assume $Y_1,\dots,Y_m$ are i.i.d. Poisson with parameter $\rho>0$:
+\[
+\mathbb P(Y=k)=e^{-\rho}\frac{\rho^k}{k!},\qquad k=0,1,2,\dots
+\]
+The log-likelihood is
+\[
+\ell(\rho)=\sum_{i=1}^m \big(y_i\ln\rho-\rho-\ln(y_i!)\big),
+\]
+and the score is
+\[
+\ell_\rho(\rho)=\frac{1}{\rho}\sum_{i=1}^m y_i-n,
+\]
+so the MLE is
+\[
+\widehat\rho_{ML}=\overline Y,
+\]
+the sample mean.
+Hence
+\[
+\mathrm{AIC}_{\text{Pois}}=-2\,\ell(\widehat\rho_{ML})+2.
+\]
+
+#### Model 2: Geometric $\mathrm{Geom}(p)$ on $\{0,1,2,\dots\}$
+
+Assume $Y_1,\dots,Y_m$ are i.i.d. geometric with parameter $p\in(0,1)$ on $\{0,1,2,\dots\}$:
+\[
+\mathbb P(Y=k)=p(1-p)^k,\qquad k=0,1,2,\dots
+\]
+The log-likelihood is
+\[
+\ell(p)=\sum_{i=1}^m \big(\ln p + y_i\ln(1-p)\big)
+= m\ln p + \Big(\sum_{i=1}^m y_i\Big)\ln(1-p),
+\]
+and the score is
+\[
+\ell_p(p)=\frac{m}{p}-\frac{1}{1-p}\sum_{i=1}^m y_i,
+\]
+so the MLE is
+\[
+\widehat p_{ML}=\frac{m}{m+\sum_{i=1}^m Y_i}=\frac{1}{1+\overline Y}.
+\]
+Hence
+\[
+\mathrm{AIC}_{\text{Geom}}=-2\,\ell(\widehat p_{ML})+2.
+\]
+
+#### Computations in R
+
+We compute the maximized log-likelihoods using built-in functions:
+
+- `dpois(y, rho_hat, log=TRUE)`, which returns the log of the Poisson probability mass function evaluated at $y$ i.e., the log-likelihood contribution of observing $y$ under a Poisson model with rate $\widehat\rho=$`rho_hat`, which is   $y\ln\widehat\rho-\widehat\rho-\ln(y!)$;
+- `dgeom(y, prob=p_hat, log=TRUE)` on $\{0,1,2,\dots\}$, which does a similar job for the Geometric model.
+
+
+```{r aic-discrete}
+# Recall that p=1
+
+# AIC for Poisson 
+rho_hat_pois <- mean(y)
+loglik_pois <- sum(dpois(y, rho_hat_pois, log = TRUE))
+aic_pois <- -2*loglik_pois + 2  
+
+# AIC for Geometric on {0,1,2,...} 
+p_hat_geom <- 1/(1 + mean(y))
+loglik_geom <- sum(dgeom(y, prob = p_hat_geom, log = TRUE))
+aic_geom <- -2*loglik_geom + 2  
+
+# This records the difference of AICs
+delta_disc <- aic_pois - aic_geom
+
+# This organizes the results in a list
+poi_vs_geo <- list(
+  m = m,
+  mean = mean(y),
+  rho_hat_pois = rho_hat_pois,
+  p_hat_geom = p_hat_geom,
+  loglik_pois = loglik_pois,
+  loglik_geom = loglik_geom,
+  AIC_pois = aic_pois,
+  AIC_geom = aic_geom,
+  delta_AIC = delta_disc
+)
+# which can be printed
+print(poi_vs_geo)
+```
+
+As before, if $\Delta = \mathrm{AIC}_{\text{Pois}}-\mathrm{AIC}_{\text{Geom}}$ then:
+
+- $\Delta>0\Longrightarrow\mathrm{AIC}_{\text{Geom}}<\mathrm{AIC}_{\text{Pois}}$, so the **geometric** model is preferred.
+- $\Delta<0\Longrightarrow\mathrm{AIC}_{\text{Pois}}<\mathrm{AIC}_{\text{Geom}}$, so the **Poisson** model is preferred.
+
+Since the observed value is $\Delta=-3.451922$, we declare the Poisson model as a better choice. This means that, given the data, we must do inference by means of 
+\[
+\mathbb P(Y=k)=e^{-\widehat\rho_{ML}}\frac{\widehat\rho_{ML}^k}{k!},\qquad k=0,1,2,\dots,
+\]
+with $\widehat\rho_{ML}=1.55$. But notice that the information-theoretic evidence in favor of Poisson is not as significant and in the previous case (in favor of Rayleigh), since we now have $|\Delta|\approx 3.45<7$.
+
+
+
+
+
+
+
+#### Part III: AIC Analysis for the Advertising data set
+
+We now analyze the advertising data set `Advertising.csv` from the AIC viewpoint.
+This data set, which has been fully considered in a companion lab[^2], displays 200 observations of the sales (in thousands of units) of a certain good together with the corresponding expenditures (in thousands of dollars) distributed between three types of media (TV, radio and newspaper), thus forming a design matrix of size 200x4. The central problem is to check whether any of these media somehow influences the sales and to what extent. To this end we applied **backward selection** to the fitted least squares linear model, thus confirming that spending with newspaper fails to be statistically significant. This justified the adoption of a reduced model, with the set of regressors containing only expenditures with TV and radio. 
+
+[^2]: `Advertising-f` available at [Github](https://github.com/levilopesdelima/stat-inference-labs).
+
+We start by recalling this procedure. As usual, we first view the data:
+
+```{r}
+dat_raw <- read.csv("Advertising.csv")
+str(dat_raw)
+head(dat_raw)
+```
+
+We fit these data with the multiple linear regression model
+\[
+y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + e_i,
+\qquad e_i \sim N(0,\sigma^2),
+\]
+where here we use the notation:
+
+- \(y\) = *sales* 
+- \(x_1\) = *TV* 
+- \(x_2\) = *radio* 
+- \(x_3\) = *newspaper*
+
+To conform to this new notation, we must rename the data columns to \(y, x_1, x_2, x_3\) (from `dat_raw` to `dat`).
+
+```{r}
+
+# If the first column looks like an index, drop it.
+if(ncol(dat_raw) >= 5 && (names(dat_raw)[1] %in% c("Unnamed: 0","X","V1"))){
+  dat_raw <- dat_raw[, -1]
+}
+
+# Expected remaining columns: TV, radio, newspaper, sales
+stopifnot(all(c("TV","radio","newspaper","sales") %in% names(dat_raw)))
+
+dat <- data.frame(
+  y  = dat_raw$sales,
+  x1 = dat_raw$TV,
+  x2 = dat_raw$radio,
+  x3 = dat_raw$newspaper
+)
+
+str(dat)
+head(dat)
+
+n <- nrow(dat)
+n
+```
+
+Proceeding as before, we may now fit the full model and call for the corresponding summary...
+
+```{r}
+fit_full <- lm(y ~ x1 + x2 + x3, data = dat)
+summary(fit_full)
+```
+
+...from which we can extract not only the estimated coefficients (displayed in the column `Estimate` above)...
+
+```{r}
+coef(fit_full)
+```
+
+
+...but also the corresponding 
+confidence intervals (at a 95% confidence level):
+
+```{r}
+confint(fit_full)
+```
+
+
+We may also visualize the confidence intervals, with the one for the *intercept* excluded (via the function `plot_coef_intervals()`, which is borrowed from the companion lab):
+
+
+```{r}
+plot_coef_intervals <- function(model) {
+  coefs <- as.data.frame(summary(model)$coefficients)
+  conf_intervals <- confint(model)
+  plot_data <- data.frame(
+    term = rownames(coefs),
+    estimate = coefs$Estimate,
+    lower = conf_intervals[, 1],
+    upper = conf_intervals[, 2]
+  )
+  
+  plot_data <- plot_data[plot_data$term != "(Intercept)", ]#intercept excluded
+ 
+   ggplot(plot_data, aes(x = term, y = estimate, ymin = lower, ymax = upper)) +
+    geom_point() +
+    geom_errorbar(width = 0.2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    coord_flip() + 
+    labs(
+      title = "Coefficient Confidence Intervals",
+      x = "Regressors",
+      y = "Coefficient Estimate and 95% Confidence Interval"
+    ) +
+    theme_minimal()
+}
+plot_coef_intervals(fit_full)
+```
+
+
+As expected, the only confidence interval containing 0 is the one corresponding to $x_3=\textrm{newspaper}$, which means that we may discard *newspaper* as a predictor if we wish. Note that this is consistent with the large $p$-value for the relevant $\mathfrak t$-test in the summary ($\approx 0.86$)[^3]. Applying *backward selection*, we now fit the partial model... 
+
+[^3]: Recall that this provides statistical evidence  for *not* rejecting the corresponding **null hypothesis** (in this case, $\beta_3=0$).  
+
+```{r}
+fit_partial <- lm(y ~ x1 + x2, data = dat)
+summary(fit_partial)
+```
+
+...from whose summary we may extract the estimated coefficients...
+
+```{r}
+coef(fit_partial)
+```
+
+... and the confidence intervals...
+
+```{r}
+confint(fit_partial)
+plot_coef_intervals(fit_partial)
+```
+
+...which indicates that the remaining regressors ($x_1=\textrm{TV}$ and $x_2=\textrm{radio}$) are both statistically significant and should be retained in the model. 
+
+As in the companion lab, we may run an ANOVA test to compare the models...
+
+```{r}
+anova(fit_partial,fit_full)
+```
+
+...so that the large *p*-value (*~0.86*) confirms that the null model (*fit_partial*) should *not* be rejected, so we may safely discard $x_3=\textrm{newspaper}$ from our original model.
+
+The point of the present discussion, however, is to check that the information-theoretic mechanism in the AICs may be used to confirm this kind of decision (based on backward selection). Recall that the AIC of a linear model as above is given by 
+\[
+\mathrm{AIC} = n\log(\widehat{\sigma}^2_{ML}) + 2(k+2)+n(\log(2\pi)+1).
+\]
+Here,
+\[
+\widehat{\sigma}^2_{ML} = \frac{\mathrm{RSS}}{n}
+\]
+is the MLE of \(\sigma^2\), where $\mathrm{RSS}$ is the **residual sum of squares**, and \(k\) is the number of regressors, excluding the intercept (thus, $k=3$ for `fit_full` and $k=2$ for `fit_partial`). Thus, we see here a sort of penalization operating in the final expression for the AIC, which somehow detects the complexity of the model as described by the number of its regressors. 
+
+We may use this textbook formula to directly compute the AIC of any model. For instance, for the full model we may extract $\mathrm{RSS}$ and compute 
+\(\widehat{\sigma}^2_{ML}\) as follows...
+
+```{r}
+rss_full <- sum(residuals(fit_full)^2)
+sig2hat_full <- rss_full / n
+rss_full
+sig2hat_full
+```
+
+...and then compute the AIC by means of the appropriate function...
+
+```{r}
+aic_book <- function(sig2hat, k, n){
+  n*(log(2*pi) + 1) + n*log(sig2hat) + 2*(k + 2)
+}
+
+AIC_full_book <- aic_book(sig2hat_full, k = 3, n = n)
+AIC_full_book
+```
+
+...which should be compared to the output of the built-in function in R:
+
+```{r}
+AIC(fit_full)
+```
+
+
+R also has a built-in function that allows us to compare the AIC for a pair of models. In our case...
+
+```{r}
+AIC(fit_partial,fit_full)
+```
+
+...and we see that, from this information-theoretic viewpoint, there appears a slight preference for `fit_partial` (with $|\Delta|\approx 1.97$), which aligns with our previous analysis based on backward selection.
+
+But we can go one step further by fitting all subset models based on \(\{x_1, x_2, x_3\}\), including the intercept-only model, and extract the corresponding AICs, which allows us to effectively compare all such models from an information-theoretic perspective.
+
+```{r}
+fit_subset <- function(vars, dat){
+  if(length(vars) == 0){
+    form <- as.formula("y ~ 1")
+  } else {
+    form <- as.formula(paste("y ~", paste(vars, collapse = " + ")))
+  }
+  lm(form, data = dat)
+}
+
+all_models <- list(
+  "x1+x2"    = c("x1","x2"),
+  "x1+x2+x3" = c("x1","x2","x3"),
+  "x1+x3"    = c("x1","x3"),
+  "x1"       = c("x1"),
+  "x2+x3"    = c("x2","x3"),
+  "x2"       = c("x2"),
+  "x3"       = c("x3"),
+  "none"     = character(0)
+)
+
+res_table <- do.call(rbind, lapply(names(all_models), function(name){
+  vars <- all_models[[name]]
+  k <- length(vars)
+  fit <- fit_subset(vars, dat)
+  rss <- sum(residuals(fit)^2)
+  sig2hat <- rss / n
+  aic <- aic_book(sig2hat, k = k, n = n)
+  coefs <- coef(fit)
+
+  b0 <- unname(coefs["(Intercept)"])
+  b1 <- if("x1" %in% names(coefs)) unname(coefs["x1"]) else NA_real_
+  b2 <- if("x2" %in% names(coefs)) unname(coefs["x2"]) else NA_real_
+  b3 <- if("x3" %in% names(coefs)) unname(coefs["x3"]) else NA_real_
+
+  data.frame(
+    model = name,
+    k = k,
+    sig2hat = sig2hat,
+    AIC_book = aic,
+    b0 = b0, b1 = b1, b2 = b2, b3 = b3,
+    row.names = NULL
+  )
+}))
+
+
+```
+
+We may now print the output with the AICs displayed in an increasing order (and with *b_i* indicating the corresponding estimated coefficient)...
+
+```{r}
+res_table <- res_table[order(res_table$AIC_book), ]
+res_table
+```
+
+...to confirm that, from the AIC viewpoint, *fit_partial* qualifies as the best model (not only if compared to *fit_full* but also among all possible sub-models) . 
+
+We may also visualize the AIC workflow as regressors are added (starting with the intercept-only model). For this we must
+compute, for each \(k=0,1,2,3\), the minimum AIC among all models that use exactly \(k\) regressors.
+
+```{r}
+aic_path <- function(dat){
+  yname <- "y"
+  xnames <- setdiff(names(dat), yname)
+  n <- nrow(dat)
+  p <- length(xnames)
+
+  aic_min <- numeric(p + 1)
+
+  for(k in 0:p){
+    if(k == 0){
+      fit <- lm(y ~ 1, data = dat)
+      rss <- sum(residuals(fit)^2)
+      aic_min[k+1] <- aic_book(rss/n, k = 0, n = n)
+    } else {
+      combos <- combn(xnames, k, simplify = FALSE)
+      aics <- sapply(combos, function(vars){
+        form <- as.formula(paste("y ~", paste(vars, collapse = "+")))
+        fit <- lm(form, data = dat)
+        rss <- sum(residuals(fit)^2)
+        aic_book(rss/n, k = k, n = n)
+      })
+      aic_min[k+1] <- min(aics)
+    }
+  }
+
+  data.frame(k = 0:p, AIC_MIN = aic_min)
+}
+
+```
+
+We may either display the output as a simple table...
+
+```{r}
+
+aic_df <- aic_path(dat)
+aic_df
+```
+
+...or make it available as a plot...
+
+```{r}
+plot(aic_df$k, aic_df$AIC, type = "b",
+     xlab = "Number of regressors (k)",
+     ylab = "Minimum AIC",
+     main = "Decrease of AIC as regressors are added")
+```
+
+This neat graphical output fully justifies the choice of `fit_partial` as the model better fitting the data.
