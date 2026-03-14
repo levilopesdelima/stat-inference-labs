@@ -1,0 +1,815 @@
+---
+title: "Logistic Regression and Neural Networks"
+author: "Levi Lopes de Lima"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+link-citations: yes
+bibliography: "prob_notes.bib"
+---
+
+
+
+### Explaining the lab
+
+
+In this lab we compare two approaches to binary prediction: 
+logistic regression and neural networks. We start by
+illustrating **logistic regression** as the canonical example of a
+**generalized linear model (GLM)** for binary responses. Thus our first goal is to show
+how the familiar linear regression framework can be extended to model the
+probability of a binary outcome through a suitable link function. By way of comparison, and in alignment with the modern trends in data science, we present an introduction to neural networks
+as a bridge to more flexible models in statistical learning. 
+
+The main goals are:
+
+1. to review the logistic regression model and some aspects of its interpretation;
+2. to simulate data from a known logistic model, so that the
+   *true* data-generating mechanism is under our control;
+3. to fit the model using the function `glm` in R and compare the estimated coefficients to the true values used in the simulation;
+4. use this same data set to fit a simple neural network with a single hidden layer, first with `nnet` (having the **sigmoid** as activation), and then with `keras3` (having **ReLu** as activation);
+5. use MAE (mean absolute error) to compare the predicted probabilities of the three fitted models with the true probabilities in the simulation.  
+
+Most of the math needed to understand this lab may be found in [@delima2025probab]. A more systematic account of logistic regression and generalized linear models 
+can be found in standard texts such as [@hastie2009elements], [@dobson2018introduction] and [@agresti2015foundations]. As for (deep) neural networks, a standard reference is [@bengio2017deep].
+
+---
+
+### A glimpse at the theory
+
+Upon observation of a binary response \(Y_i\in\{0,1\}\) for \(i=1,\dots,n\), together
+with a vector of $r$ covariates
+\[
+x_i=(x_{i1},\dots,x_{ir})^\top,
+\]
+we might be interested in the conditional probability
+\[
+p_i := P(Y_i=1|_{X_i= x_i}).
+\]
+If we attempt to model \(p_i\) directly using a linear model,
+\[
+p_i \approx \beta_0 + x_i^\top\beta ,
+\]
+we immediately run into trouble because 
+the right-hand side could lie outside \((0,1)\), which is incompatible with the
+fact that \(p_i\) is a probability.
+The idea behind **generalized linear models (GLMs)**, as applied to this setting, is  to introduce a
+link function \(g:(0,1)\to\mathbb R\) such that
+\[
+\eta_i:=g(p_i)=\beta_0+x_i^\top\beta.
+\]
+In logistic regression the link function is the **logit**
+\[
+g(p_i)={\rm logit}(p_i):=\ln\left(\frac{p_i}{1-p_i}\right),
+\]
+so the model becomes
+\[
+\ln\left(\frac{p_i}{1-p_i}\right)
+=
+\beta_0+x_i^\top\beta
+=
+\beta_0+\sum_{j=1}^r \beta_j x_{ij},
+\]
+or equivalently,
+\[
+p_i
+={\rm logit}^{-1}(\eta_i)
+=\frac{1}{1+e^{-\eta_i}}
+=
+\frac{1}
+{1+e^{-(\beta_0+x_i^\top\beta)}}.
+\]
+In the sequel we also set ${\rm logit}^{-1}=\sigma$ and call it the **sigmoid**.
+
+It remains to estimate the unknown parameter vector $\gamma=(\beta_0,\beta)\in\mathbb R\times\mathbb R^r$.
+Assuming that, conditional on the covariates, the responses $Y_i$ are independent and 
+each follows a Bernoulli distribution with parameter $p_i$, 
+\[
+Y_i|_{X_i=x_i} \sim \text{Bern}(p_i),
+\]
+the log-likelihood 
+function is
+\[
+\ell(y;\beta_0,\beta) = \sum_{i=1}^n 
+\Big\{ y_i\ln(p_i) + (1-y_i)\ln(1-p_i)\Big\},
+\]
+with $p_i$ as above. The logistic regression estimator $\widehat\gamma=(\widehat\beta_0,\widehat\beta)$ is the **maximum likelihood estimator** obtained by maximizing this log-likelihood: it satisfies
+\[
+{\mathfrak x}^\perp({y}-p)=0,
+\]
+where ${\mathfrak x}$ is the associated (extended) design matrix. 
+Note that this is *non-linear* in $\gamma$ due to the expression for ${\rm logit}^{-1}$ above, so it should be solved for $\widehat\gamma$ by means of some iterative process (usually, Fisher scoring). In R, this is implemented via the `glm` function with the prescription `family = binomial`.
+
+We finally note that: 
+
+- the standard Fisher machinery applies to this setting, so that $\widehat\gamma$ is asymptotically normal: as $n\to+\infty$, 
+\[
+\widehat\gamma \stackrel{d}{\approx}
+\mathcal N\left(\gamma,
+\left({\mathfrak x}^{\top}W{\mathfrak x}\right)^{-1}
+\right), \quad W={\rm diag}\,(p_i(1-p_i)),
+\]
+which, together with consistency,  may be used to construct asymptotic confidence regions for $\gamma$.
+
+- we may employ the **Akaike information criterion**,
+\[
+{\rm AIC}=-2\ell(y;\widehat\gamma)+2(r+1),
+\]
+to perform model selection within the logistic setting. This relates to the **residual deviance** $D$ by means of 
+\[
+{\rm AIC}=D+2(r+1).
+\]
+Thus, $D=-2\ell(y;\widehat\gamma)$ measures lack of fit while ${\rm AIC}$  penalizes this with model complexity (the number of fitted parameters in the model). When fitting a logistic model as above in R, the associated `summary` displays these quantities by default, so we will be able to check this relationship. 
+
+### Starting the lab
+
+To compare the different models (logistic vs neural networks), we generate data from a logistic
+regression model whose parameters are known. In this way we can evaluate
+how well each method recovers the underlying relationship between the
+covariates and the response.
+Thus we simulate a response variable \(Y\) and a vector $X$ of covariates so that
+\[
+P(Y=1|_X)=\sigma(\beta_0+\beta^\top X),
+\]
+with $\gamma=(\beta_0,\beta)$ given in advance. 
+Since the data are generated
+from a logistic model, logistic regression is correctly specified,
+whereas neural networks introduce additional flexibility that may or
+may not improve predictive performance. 
+
+We work with a simple scenario with only four predictors ($r=4$). To fix matters, we may adopt an educational perspective and assume that each observation corresponds to a
+student answering a multiple-choice question, so the variables are:
+
+- `ability_proxy`: proxy for student ability
+- `study_time`: hours studied
+- `homework`: homework completed or not
+- `gender`: additional binary covariate
+
+In order to align with the notation above, we write the predictors as
+
+\[
+x_i=(x_{i1},x_{i2},x_{i3},x_{i4})^\top,
+\]
+where
+\[
+x_{i1}=\texttt{ability\_proxy}_i
+\]
+\[
+x_{i2}=\texttt{study\_time}_i
+\]
+\[
+x_{i3}=1_{\{\texttt{homework}_i=\texttt{yes}\}}
+\]
+\[
+x_{i4}=1_{\{\texttt{gender}_i=\texttt{male}\}},
+\]
+where $1_{\{\,\,\}}$ denotes an indicator. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+set.seed(20251122)
+```
+
+#### Simulating data from a logistic regression model
+
+We begin by writing a helper function to simulate data from a logistic regression 
+model with specified coefficients and sample size. We remark that
+in the simulation below, the covariates are generated from a mixture of distributions: two continuous variables drawn from Gaussian distributions and two binary variables drawn from Bernoulli distributions. Thus, the logistic model does not require the covariates themselves to follow any special distribution.
+
+```{r helper}
+# Helper function: simulate data from a logistic regression model
+# using the notation
+#   logit(π_i) = β0 + β1 x_{i1} + β2 x_{i2} + β3 x_{i3} + β4 x_{i4}
+simulate_logistic_data <- function(n = 1000,
+                                   beta_0 = -0.5,
+                                   beta_1 = 1.2,
+                                   beta_2 = 0.7,
+                                   beta_3 = 0.8,
+                                   beta_4 = 0.1) {
+  # Generate predictors
+  x1 <- rnorm(n, 0, 1)              # ability proxy, simulated with a normal
+  x2 <- pmax(0, rnorm(n, 2, 1))     # study time, simulated with a *truncated* normal
+  x3 <- rbinom(n, 1, 0.6)           # homework indicator, simulated with a Bernoulli
+  x4 <- rbinom(n, 1, 0.5)           # gender indicator, simulated with a *fair* Bernoulli 
+# Linear predictor
+  eta <- beta_0 +
+         beta_1 * x1 +
+         beta_2 * x2 +
+         beta_3 * x3 +
+         beta_4 * x4
+  # Logistic transformation
+  pi <- 1 / (1 + exp(-eta))
+# Bernoulli response
+  y <- rbinom(n, 1, pi)
+# Return dataset
+  data.frame(
+    y = y,
+    x1 = x1,
+    x2 = x2,
+    x3 = factor(x3, levels = c(0,1), labels = c("no","yes")),
+    x4 = factor(x4, levels = c(0,1), labels = c("female","male")),
+    true_pi = pi
+  )
+}
+logit_data <- simulate_logistic_data()
+str(logit_data)
+```
+
+
+We now have a data frame `logit_data` with:
+
+- a binary response `y`,  
+- four covariates (`x1`, `x2`, `x3`, `x4`), where `x1` and `x2` are numeric and  
+  `x3`, `x4` are factors corresponding to binary indicators, and  
+- the “true” probability of success `true_pi` generated by the model.
+
+Thus, in the simulated data the components of the covariates correspond to the R variables
+
+\[
+\begin{aligned}
+x_{i1} &= \texttt{x1}_i,\\
+x_{i2} &= \texttt{x2}_i,\\
+x_{i3} &= \texttt{x3}_i,\\
+x_{i4} &= \texttt{x4}_i .
+\end{aligned}
+\]
+
+From this point on, we pretend that only the observed variables  
+\[
+(y, x_1, x_2, x_3, x_4)
+\]
+are available, and we try to recover the unknown
+relationship between \(Y\) and the covariates.
+
+
+
+
+
+#### Fitting the logistic regression model
+
+We now fit the logistic regression model given by
+\[
+P(Y_i=1|_{X_i= x_i})
+=
+\sigma(\eta_i)
+=
+\sigma(\beta_0 + x_i^\top \beta),
+\]
+where $\sigma={\rm logit}^{-1}:\mathbb R\to (0,1)$ is the sigmoid.
+This representation emphasizes that logistic regression is governed by a
+**linear predictor** in the covariates.
+In R, this corresponds to the formula
+\[
+\texttt{y ~ x1 + x2 + x3 + x4},
+\]
+
+together with the option `family = binomial`.
+
+- At this point it is worth emphasizing that the essential structure of the model lies in the
+linear predictor
+\[
+\eta_i = \beta_0 + x_i^\top \beta.
+\]
+Later in the lab we will see that neural networks arise naturally by replacing
+this linear predictor with a more flexible **nonlinear** representation of the
+covariates.
+
+
+```{r}
+# Fit logistic regression model
+#   logit(p_i) = β0 + β1 x_{i1} + β2 x_{i2} + β3 x_{i3} + β4 x_{i4}
+
+logit_fit <- glm(
+  y ~ x1 + x2 + x3 + x4,
+  data = logit_data,
+  family = binomial
+)
+summary(logit_fit)
+```
+
+Besides the estimated coefficients, which we can extract by...
+
+```{r}
+coef_est <- coef(logit_fit)
+coef_est
+```
+
+...the `summary` output gives:
+
+- their standard errors,  
+- $z$-statistics and $p$-values, and  
+- estimates of the AIC and residual deviance.
+
+Regarding this, we  note that due to its rather large $p$-value (about $0.564$), the variate $x_4$ fails to be statistically significant, so we may drop it from the model if we wish. We do this by fitting a new model `logit_fit_no_x4` in which $x_4$ is not present: 
+
+
+```{r}
+logit_fit_no_x4 <- glm(
+  y ~ x1 + x2 + x3,
+  data = logit_data,
+  family = binomial
+)
+summary(logit_fit_no_x4)
+```
+
+We see that `logit_fit_no_x4` has a slightly smaller AIC than `logit_fit` ($860.08$ against $861.75$) and hence fits slightly better to the model, but since the difference is small, we prefer to stick to the original model `logit_fit`. Also, in both cases the difference between AIC and Residual Deviance equals $2(r+1)$, which confirms a previous formula. 
+
+We should compare the estimated parameters of `logit_fit` to the *true* parameters used in the 
+simulation. For convenience, let us collect the true parameters in a named 
+vector and place them side by side with the estimates.
+
+
+```{r}
+
+true_par <- c("(Intercept)" = -0.5,
+              "x1" = 1.2,
+              "x2" = 0.7,
+              "x3yes" = 0.8,
+              "x4male" = 0.1)
+comparison <- data.frame(
+Parameter=names(true_par),
+TrueValue=as.numeric(true_par),
+Estimate=coef_est[names(true_par)]
+)
+comparison$Difference <- comparison$Estimate-comparison$TrueValue
+comparison_round <- comparison
+comparison_round[,-1] <- round(comparison_round[,-1],3)
+comparison_round
+```
+
+
+If $n$ is fairly large we expect the maximum likelihood estimators to be much closer  
+to the true parameter values, up to random variation. In order to empirically confirm this we run a fit with the same true parameters as before but with $n=10000$.
+
+
+```{r fit new}
+logit_data_new <- simulate_logistic_data(10000,-0.5,1.2,0.7,0.8,0.1)
+logit_fit_new <- glm(
+  y ~ x1 + x2 + x3 + x4,
+  data = logit_data_new,
+  family = binomial
+)
+summary(logit_fit_new)
+```
+
+We may now illustrate the consistency of the maximum likelihood estimator by comparing
+the estimates obtained from samples of size \(n=1000\), via `logit_fit` and \(n=10000\), via `logit_fit_new`, keeping
+the true parameter values fixed. 
+
+
+```{r}
+coef_1000  <- coef(logit_fit)
+coef_10000 <- coef(logit_fit_new)
+true_par <- c("(Intercept)" = -0.5,
+              "x1" = 1.2,
+              "x2" = 0.7,
+              "x3yes" = 0.8,
+              "x4male" = 0.1)
+comparison_n <- data.frame(
+  Parameter   = names(true_par),
+  TrueValue   = as.numeric(true_par),
+  Estimate1000  = as.numeric(coef_1000[names(true_par)]),
+  Estimate10000 = as.numeric(coef_10000[names(true_par)])
+)
+comparison_n$Error1000  <- comparison_n$Estimate1000  - comparison_n$TrueValue
+comparison_n$Error10000 <- comparison_n$Estimate10000 - comparison_n$TrueValue
+comparison_n_round <- comparison_n
+comparison_n_round[, -1] <- round(comparison_n_round[, -1], 3)
+comparison_n_round
+```
+
+The table shows that as the sample size increases, the
+estimated coefficients move closer to the true coefficients used in the
+simulation except for the last one, $\widehat\beta_4$, which is expected since we have seen that the corresponding covariate is statistically superfluous.
+
+Having fitted the logistic regression model (with $n=1000$) and examined the estimated coefficients, we now turn to its predictive interpretation.
+
+#### Predicted probabilities and classification
+
+Returning to the output of `logit_fit`, with $n=1000$, we observe that the logistic model yields estimated probabilities of correct answers for each 
+observation. These are given by the fitted values:
+
+```{r}
+logit_data$fit_pi <- fitted(logit_fit)
+head(logit_data[,c("y","true_pi","fit_pi")])
+```
+
+We can visualize the relationship between `true_pi` and `fit_pi`:
+
+```{r}
+library(ggplot2)
+ggplot(logit_data,aes(x=true_pi,y=fit_pi))+
+geom_point(alpha=0.3)+
+geom_abline(slope=1,intercept=0,linetype="dashed")+
+theme_minimal()
+```
+
+The dashed line corresponds to a perfect fit. In practice, the fitted 
+probabilities scatter around this line.
+
+To use the model for *classification*, we must choose a threshold $t\in(0,1)$ 
+and predict
+
+\[
+\widehat{Y}_i = 
+\begin{cases}
+1, & \text{if } \widehat p_i \geq t,\\
+0, & \text{else},
+\end{cases}
+\]
+
+where $\widehat p_i$ is the fitted probability for the $i$-th observation. 
+A common choice is $t = 0.5$.
+
+```{r}
+threshold <- 0.5
+logit_data$y_hat <- ifelse(logit_data$fit_pi >= threshold, 1, 0)
+table(Predicted = logit_data$y_hat, Observed = logit_data$y)
+```
+
+
+This contingency table is often called the **confusion matrix**, from which we can 
+compute empirical measures such as **accuracy**, **sensitivity** and **specificity**.
+
+```{r}
+conf_mat <- table(Predicted = logit_data$y_hat, Observed = logit_data$y)
+accuracy <- sum(diag(conf_mat)) / sum(conf_mat)
+sensitivity <- conf_mat["1", "1"] / sum(conf_mat[, "1"])  # true positive rate
+specificity <- conf_mat["0", "0"] / sum(conf_mat[, "0"])  # true negative rate
+c(accuracy = accuracy,
+  sensitivity = sensitivity,
+  specificity = specificity)
+```
+
+
+#### ROC curve and AUC
+
+The choice of the threshold $t$ is arbitrary, and different thresholds lead to 
+different trade-offs between sensitivity and specificity. 
+Because of this, logistic regression models are often evaluated using threshold-free metrics such as a **Receiver Operating Characteristic (ROC)** curve and the
+the corresponding **Area Under the Curve (AUC)**, which are tools used to evaluate the model’s classification performance across all possible thresholds.
+
+```{r}
+library(pROC)
+roc_obj <- roc(logit_data$y,logit_data$fit_pi)
+plot(roc_obj,print.auc=TRUE)
+```
+
+Since ${\rm AUC}\,=0.788\in[0.7,0.8]$, the fit is acceptable. 
+
+
+For a deeper analysis, we may proceed as in linear regression and examine various types of residuals and influence 
+measures. In the logistic regression context, **deviance residuals** and 
+**Pearson residuals** are commonly used, with the `glm` object already computing
+these quantities. Large residuals may indicate outliers, model misspecification, or influential observations. More detailed diagnostics (e.g. Cook’s distance, leverage, etc.) 
+are also available for logistic regression, but we will not pursue them here; we refer to the textbooks mentioned above for a detailed exploration of these topics. 
+
+
+We now move from a correctly specified classical model to a more flexible class of predictors, namely neural networks.
+
+### Neural networks as nonlinear extensions of logistic regression
+
+In the logistic regression model studied above, the conditional probability of a correct answer is written as
+\[
+P(Y_i=1|_{X_i= x_i})
+=
+\sigma(\beta_0+x_i^\top\beta),
+\]
+where
+\[
+\sigma(z)=\frac{1}{1+e^{-z}}
+\]
+denotes the sigmoid and
+\[
+x_i=(x_{i1},x_{i2},x_{i3},x_{i4})^\top
+\]
+is the vector of predictors associated with observation \(i\).
+The key structural feature of this model is that the **log-odds**
+\[
+\ln\left(\frac{p_i}{1-p_i}\right)
+\]
+are assumed to be a **linear function of the predictors**. 
+While this assumption
+leads to a simple and interpretable model, it may be too restrictive if the
+relationship between the covariates and the response is nonlinear.
+A natural way to introduce additional flexibility is to replace the linear
+predictor
+
+\[
+\beta_0+x_i^\top\beta
+\]
+
+by a nonlinear transformation of the predictors. One of the most widely used
+ways of doing this is through a **neural network with a hidden layer**.
+
+Suppose we start with a logistic model with $r$ covariates as above and aim at adding to it   \(m\) hidden units (comprising a single hidden layer). The first step involves the consideration, for each observation \(i\), of
+the **hidden layer activation**
+\[
+h_{ik}
+=
+\phi(w_{k0}+w_k^\top x_i),
+\qquad k=1,\dots,m,
+\]
+where
+
+- \(w_k\) is a $r$-vector of **weights** associated with the \(k\)-th hidden unit,
+- \(w_{k0}\) is a **bias** term,
+- \(\phi\) is a nonlinear **activation function**.
+
+Typical choices for \(\phi\) include: 
+
+- the sigmoid discussed earlier; 
+
+- the **rectified linear** unit (ReLU) given by $\phi(x)=\max\{0,x\}$, $x\in\mathbb R$.
+
+
+The output of the network is obtained by combining the hidden units through
+\[
+\eta_i
+=
+\alpha_0+\sum_{k=1}^m \alpha_k h_{ik},
+\]
+and then applying the sigmoid so as to get the predicted probability
+\[
+P(Y_i=1|_{X_i= x_i})
+=
+\sigma(\eta_i).
+\]
+Finally, 
+combining the two steps yields
+\[
+P(Y_i=1|_{X_i= x_i})=\sigma(f_\theta(x_i)), 
+\]
+where 
+\[
+f_\theta(x_i)=\sum_{k=1}^m
+\alpha_k
+\phi(w_{k0}+w_k^\top x_i),
+\]
+with $\theta$ denoting the collection of all network parameters
+(weights and biases).
+Equivalently, 
+\[
+P(Y_i=1|_{X_i= x_i})
+=
+\frac{1}{1+e^{-\left(
+\alpha_0+
+\sum_{k=1}^m
+\alpha_k
+\phi(w_{k0}+w_k^\top x_i)
+\right)}}.
+\]
+
+
+
+
+Before proceeding, we remark that the logistic regression model can be viewed as a special case of the neural
+network described earlier.
+Indeed, if the hidden layer is removed, the predictor reduces to
+\[
+\eta_i=\beta_0+x_i^\top\beta,
+\]
+which is exactly the logistic regression model studied earlier.
+Thus a neural network replaces this **linear predictor**
+with a **nonlinear representation of the predictors** constructed through hidden
+units.
+From a statistical perspective, the hidden units may be interpreted as creating
+derived predictors
+\[
+h_{ik}=\phi(w_{k0}+w_k^\top x_i),
+\]
+which are then combined linearly in the output layer.
+
+It is crucial here to determine how the number of free parameters in such a neural network grows with the **height** $m$ of the hidden layer. Indeed, each hidden unit uses $r+1$ parameters (corresponding to $r$ weights and one bias) so when moving across the $m$ units of the hidden layer we use $m(r+ 1)$ parameters altogether. Since the final output should be a probability, we always employ in this last step a logistic model with $m$ parameters (one for each hidden unit), so we end up with a model with $m(r+1)+m+1=m(r+2)+1$ free parameters, which need to be estimated somehow. 
+
+The parameters of the network are typically estimated by minimizing the
+negative log-likelihood of the logistic model, which in this context is often
+called the **binary cross-entropy loss**. For observations
+$(x_i,y_i)$ with predicted probabilities $\widehat p_i=\sigma(f_\theta(x_i))$, the corresponding 
+optimization problem takes the form
+\[
+\hat{\theta}
+=
+\operatorname*{arg\,min}_{\theta}
+\;\sum_{i=1}^n\mathfrak l(y_i,\widehat p_i),
+\]
+where 
+\[
+\mathfrak l(y_i,\widehat p_i)=
+-
+\left[y_i\ln(\hat p_i)+(1-y_i)\ln(1-\hat p_i)\right].
+\]
+In other words,
+the parameters of the network are chosen so as to minimize the
+cross-entropy loss between the observed responses and the predicted
+probabilities.
+
+Unlike the classical logistic regression model, this optimization problem cannot be solved in closed form. Instead, the network parameters are estimated iteratively using **gradient-based optimization methods**, most commonly variants of **stochastic gradient descent (SGD)**. The gradients of the loss function with respect to the network parameters are computed efficiently using the **backpropagation algorithm**, which applies the chain rule to propagate derivatives through the layers of the network. Starting from an initial set of randomly initialized weights, the algorithm repeatedly updates the parameters in the direction that reduces the loss until convergence; see [@bengio2017deep] for details.
+
+
+#### Fitting a neural network in R
+
+To illustrate this construction we now fit a simple neural network with a single hidden layer
+to the simulated data.
+For this we use the built-in R package `nnet`.
+
+```{r}
+library(nnet)
+nn_fit <- nnet(
+  y ~ x1 + x2 + x3 + x4,
+  data = logit_data,
+  size = 5,
+  decay = 0.01,
+  maxit = 500,
+  trace = FALSE
+)
+```
+
+Here `size = 5` specifies that the hidden layer contains five units. By default, `nnet` uses the sigmoid as the activation ($\phi=\sigma$). Thus both the hidden layer and the
+output layer are built from logistic units, which historically correspond to
+one of the earliest neural network architectures,
+which may be depicted as...
+
+```{r}
+library(NeuralNetTools)
+plotnet(nn_fit)
+```
+
+...with B1 and B2 representing the bias entries at each stage. 
+
+
+We may also display the $5(4+2)+1=31$ fitted parameters by means of...
+
+```{r}
+neuralweights(nn_fit)
+```
+
+...with the first entry in each row representing the fitted bias. In particular, with the fitted parameters at hand we can easily make predictions for the response given a set of covariates not only in the simulated data set but also for any *future* observation. 
+For instance, the predicted probabilities for the simulated data set are obtained as follows. 
+
+```{r}
+nn_prob <- predict(nn_fit, type = "raw")
+head(nn_prob)
+```
+
+We now compare the probabilities predicted by the previous logistic regression model and
+the neural network with the true probabilities (from the simulation) for the first few observations, together with the corresponding errors so as to evaluate how well their predicted probabilities recover the true probabilities used in the simulation.
+
+
+```{r}
+comparison_nn <- data.frame(
+  true_prob = logit_data$true_pi,
+  logistic = logit_data$fit_pi,
+  neural_net = nn_prob
+)
+comparison_nn$error_logistic <- comparison_nn$logistic - comparison_nn$true_prob
+comparison_nn$error_nn <- comparison_nn$neural_net - comparison_nn$true_prob
+comparison_nn <- round(comparison_nn, 4)
+head(comparison_nn)
+```
+
+We may summarize the errors in the last two columns in a very simple and informative way by computing the mean absolute error (MAE) of the predicted probabilities relative to the true probabilities. 
+This gives one number for each model,
+\[
+{\rm MAE}=\frac{1}{n}\sum_{i=1}^n|\widehat p_i-p_i|,
+\]
+thus quantifying its predictive accuracy.
+
+```{r}
+mae_logistic <- mean(abs(comparison_nn$error_logistic))
+mae_nn <- mean(abs(comparison_nn$error_nn))
+data.frame(
+  Model = c("Logistic regression", "Neural network"),
+  MAE = round(c(mae_logistic, mae_nn), 5)
+)
+```
+
+We thus see that, as far as the MAE is concerned, the logistic model behaves much better than the neural network. Let us see what happens if we increase the size of the hidden layer to `size=20`, so as to obtain a network with $20(4+2)+1=121$ parameters...
+
+
+```{r fit_nn_100}
+set.seed(20251122)
+nn_fit_inc <- nnet(
+  y ~ x1 + x2 + x3 + x4,
+  data = logit_data,
+  size = 20,
+  decay = 0.01,
+  maxit = 500,
+  trace = FALSE
+)
+nn_prob_inc <- predict(nn_fit_inc, type = "raw")
+```
+
+...and then comparing the results:
+
+```{r compare_mae_models}
+mae_logistic <- mean(abs(logit_data$fit_pi - logit_data$true_pi))
+mae_nn <- mean(abs(nn_prob - logit_data$true_pi))
+mae_nn_inc <- mean(abs(nn_prob_inc - logit_data$true_pi))
+mae_comparison <- data.frame(
+  Model = c("Logistic regression",
+            "Neural network (original size)",
+            "Neural network (size = 20)"),
+  MAE = round(c(mae_logistic, mae_nn, mae_nn_inc), 5)
+)
+mae_comparison
+```
+
+Thus we obtain a strong indication that the mean absolute error (MAE) tends to increase as the size of the hidden layer grows. There are at least two reasons why this behavior is expected:
+
+- First, in the experiment involving `logit_fit`, the data were generated from a logistic regression model. The corresponding estimator is therefore correctly specified and involves only a small number of parameters—namely five—so it can be estimated reliably from the available sample with size $n=1000$.
+
+- On the other hand, although  neural networks with larger hidden layers allow for greater flexibility in capturing nonlinear relationships between predictors and the response, their flexibility comes at the cost of introducing many additional parameters that must be estimated from the same sample. This not only makes estimation more difficult but also increases the variance of the estimator. As a consequence, the mean absolute error may increase as the size of the hidden layer grows (while the sample size remains fixed).
+
+This illustrates an important principle of **statistical learning**: increasing model flexibility does not necessarily improve predictive accuracy. In other words, a more flexible model does not automatically outperform a correctly specified simpler one.
+However, at least from the empirical viewpoint, it is well established that when very large amounts of data are available, highly flexible models such as **deep** neural networks (i.e., networks with many layers) can provide superior predictive performance, since they are capable of capturing complex nonlinear relationships between predictors and responses. Unfortunately, this gain in **predictive power** typically comes at the cost of reduced **interpretability** relative to classical regression models, this being the reason why such modern models are usually called **black boxes** which require to be illuminated somehow; see [@guidotti2018survey].
+
+### Using RelU
+
+The classical implementation of neural networks in the `nnet` package uses sigmoid activation functions in the hidden layer. Although sigmoid activations are smooth and historically important, they tend to saturate when their inputs become large in magnitude, which can make the optimization problem harder because the corresponding gradients become very small.
+For this reason, many modern neural network implementations use the rectified linear unit (ReLU) activation function instead.
+Unlike the sigmoid function, ReLU does not saturate for positive inputs and therefore typically leads to faster and more stable training in deep learning models. In the next step we fit the same 4-5-1 architecture (in particular, using the same simulated data) using the `keras3` package in R, with ReLU activation in the hidden layer and a sigmoid activation in the output layer so that, as before, the final output of the network produces estimated probabilities for the binary response.
+
+Let us start by preparing the data and defining the architecture of the network.
+
+
+```{r relu1}
+library(keras3)
+
+# Build a numeric 4-column input matrix from logit_data
+X <- cbind(
+  x1 = logit_data$x1,
+  x2 = logit_data$x2,
+  x3 = ifelse(logit_data$x3 == "yes", 1, 0),
+  x4 = ifelse(logit_data$x4 == "male", 1, 0)
+)
+
+# Response and true probabilities
+y_num <- logit_data$y
+true_pi <- logit_data$true_pi
+
+# Standardize predictors
+X_scaled <- scale(X)
+
+# Define a 4-5-1 neural network with ReLU activation and a sigmoid output
+relu_fit <- keras_model_sequential(input_shape = c(4)) |>
+  layer_dense(units = 5, activation = "relu") |>
+  layer_dense(units = 1, activation = "sigmoid")
+```
+
+We now employ the ``compile()`` function, which specifies the optimization procedure and the loss function that the network will minimize, and the ``fit()`` function, which trains the network by repeatedly updating the model parameters in order to minimize the loss on the training data.
+
+```{r relu2}
+relu_fit |> compile(
+  optimizer = "adam",
+  loss = "binary_crossentropy",
+  metrics = list("accuracy")
+)
+relu_fit |> fit(
+  x = X_scaled,
+  y = y_num,
+  epochs = 200,
+  batch_size = 32,
+  validation_split = 0.2,
+  verbose = 0
+)
+```
+
+We may now extract the fitted probabilities from the trained neural network and put them in a convenient format for computing the associated MAE.
+
+```{r}
+# Predicted probabilities
+p_relu <- relu_fit |> predict(X_scaled, verbose = 0)
+p_relu <- as.numeric(p_relu)
+# MAE relative to the true conditional probabilities
+mae_relu <- mean(abs(true_pi - p_relu))
+mae_relu
+```
+
+Finally, we may compare this with the previous ones.
+
+```{r}
+mae_logistic <- mean(abs(comparison_nn$error_logistic))
+mae_nn <- mean(abs(comparison_nn$error_nn))
+data.frame(
+  Model = c("Logistic regression", "Neural network (nnet)", "Neural network (ReLU, keras)"),
+  MAE = round(c(mae_logistic, mae_nn, mae_relu), 5)
+)
+```
+
+We close this lab with a few thoughts.
+
+- The neural network fitted with `keras3` and a ReLU hidden layer achieves a prediction error that is much closer to that of logistic regression than the network fitted with the classical `nnet` implementation. This difference is not surprising: the `nnet` package relies on sigmoid activation functions in the hidden layer and on older optimization techniques, whereas modern neural network frameworks typically use the rectified linear unit (ReLU) activation function together with more efficient optimization algorithms such as **Adam**.
+
+- The ReLU activation function avoids the saturation effects that often occur with sigmoid units and therefore tends to produce more stable and efficient training. Moreover, the `keras3` framework provides a modern interface for neural network modeling, allowing flexible architectures, advanced optimization methods, and efficient computation. For these reasons, ReLU-based networks implemented through frameworks such as `keras3` or ``TensorFlow`` have become standard choices in contemporary machine learning and deep learning practice.
+
+- In the present experiment, however, logistic regression still achieves the best predictive performance. This is expected because the data were generated from a logistic model, so the corresponding estimators are correctly specified. The neural network introduces additional flexibility, which can be advantageous when the relationship between predictors and response is nonlinear, but may also increase estimation variability when the true model is simple.
+
+- The overall conclusion suggested by this lab is that neural networks and other flexible machine learning models become particularly advantageous when the relationship between predictors and response is highly nonlinear and large amounts of data are available, whereas classical statistical models often remain competitive in simpler settings.
+
+
+
+
+### References
+
