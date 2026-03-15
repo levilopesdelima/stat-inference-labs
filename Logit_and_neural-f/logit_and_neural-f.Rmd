@@ -466,7 +466,7 @@ these quantities. Large residuals may indicate outliers, model misspecification,
 are also available for logistic regression, but we will not pursue them here; we refer to the textbooks mentioned above for a detailed exploration of these topics. 
 
 
-We now move from a correctly specified classical model to a more flexible class of predictors, namely neural networks.
+We now move from a correctly specified classical model to a more flexible class of predictors, namely **neural networks**.
 
 ### Neural networks as nonlinear extensions of logistic regression
 
@@ -605,7 +605,7 @@ the parameters of the network are chosen so as to minimize the
 cross-entropy loss between the observed responses and the predicted
 probabilities.
 
-Unlike the classical logistic regression model, this optimization problem cannot be solved in closed form. Instead, the network parameters are estimated iteratively using **gradient-based optimization methods**, most commonly variants of **stochastic gradient descent (SGD)**. The gradients of the loss function with respect to the network parameters are computed efficiently using the **backpropagation algorithm**, which applies the chain rule to propagate derivatives through the layers of the network. Starting from an initial set of randomly initialized weights, the algorithm repeatedly updates the parameters in the direction that reduces the loss until convergence; see [@bengio2017deep] for details.
+Unlike the classical logistic regression model, whose parameters are typically estimated using Fisher scoring or Newton–Raphson methods, neural networks are trained using **gradient-based optimization methods**, most commonly variants of **stochastic gradient descent (SGD)**. The gradients of the loss function with respect to the network parameters are computed efficiently using the **backpropagation algorithm**, which applies the chain rule to propagate derivatives through the layers of the network. Starting from an initial set of randomly initialized weights, the algorithm repeatedly updates the parameters in the direction that reduces the loss until convergence; see [@bengio2017deep] for details.
 
 
 #### Fitting a neural network in R
@@ -725,11 +725,11 @@ Thus we obtain a strong indication that the mean absolute error (MAE) tends to i
 This illustrates an important principle of **statistical learning**: increasing model flexibility does not necessarily improve predictive accuracy. In other words, a more flexible model does not automatically outperform a correctly specified simpler one.
 However, at least from the empirical viewpoint, it is well established that when very large amounts of data are available, highly flexible models such as **deep** neural networks (i.e., networks with many layers) can provide superior predictive performance, since they are capable of capturing complex nonlinear relationships between predictors and responses. Unfortunately, this gain in **predictive power** typically comes at the cost of reduced **interpretability** relative to classical regression models, this being the reason why such modern models are usually called **black boxes** which require to be illuminated somehow; see [@guidotti2018survey].
 
-### Using RelU
+### Using ReLU
 
 The classical implementation of neural networks in the `nnet` package uses sigmoid activation functions in the hidden layer. Although sigmoid activations are smooth and historically important, they tend to saturate when their inputs become large in magnitude, which can make the optimization problem harder because the corresponding gradients become very small.
 For this reason, many modern neural network implementations use the rectified linear unit (ReLU) activation function instead.
-Unlike the sigmoid function, ReLU does not saturate for positive inputs and therefore typically leads to faster and more stable training in deep learning models. In the next step we fit the same 4-5-1 architecture (in particular, using the same simulated data) using the `keras3` package in R, with ReLU activation in the hidden layer and a sigmoid activation in the output layer so that, as before, the final output of the network produces estimated probabilities for the binary response.
+Unlike the sigmoid function, ReLU does not saturate for positive inputs and therefore typically leads to faster and more stable training in deep learning models. In the next step we fit the same 4-5-1 architecture (in particular, starting with the same simulated data) using the `keras3` package in R, with ReLU activation in the hidden layer and a sigmoid activation in the output layer so that, as before, the final output of the network produces estimated probabilities for the binary response.
 
 Let us start by preparing the data and defining the architecture of the network.
 
@@ -776,7 +776,7 @@ relu_fit |> fit(
 )
 ```
 
-We may now extract the fitted probabilities from the trained neural network and put them in a convenient format for computing the associated MAE.
+We may now extract the fitted probabilities from the trained neural network and put them in a convenient format for computing the associated MAE...
 
 ```{r}
 # Predicted probabilities
@@ -784,10 +784,9 @@ p_relu <- relu_fit |> predict(X_scaled, verbose = 0)
 p_relu <- as.numeric(p_relu)
 # MAE relative to the true conditional probabilities
 mae_relu <- mean(abs(true_pi - p_relu))
-mae_relu
 ```
 
-Finally, we may compare this with the previous ones.
+... which we may finally compare with the previous ones.
 
 ```{r}
 mae_logistic <- mean(abs(comparison_nn$error_logistic))

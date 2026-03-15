@@ -11,7 +11,7 @@
 
 <meta name="author" content="Levi Lopes de Lima" />
 
-<meta name="date" content="2026-03-14" />
+<meta name="date" content="2026-03-15" />
 
 <title>Logistic Regression and Neural Networks</title>
 
@@ -376,7 +376,7 @@ display: none;
 <h1 class="title toc-ignore">Logistic Regression and Neural
 Networks</h1>
 <h4 class="author">Levi Lopes de Lima</h4>
-<h4 class="date">2026-03-14</h4>
+<h4 class="date">2026-03-15</h4>
 
 </div>
 
@@ -813,6 +813,8 @@ coefficients move closer to the true coefficients used in the simulation
 except for the last one, <span class="math inline">\(\widehat\beta_4\)</span>, which is expected since
 we have seen that the corresponding covariate is statistically
 superfluous.</p>
+<p>Having fitted the logistic regression model (with <span class="math inline">\(n=1000\)</span>) and examined the estimated
+coefficients, we now turn to its predictive interpretation.</p>
 </div>
 <div id="predicted-probabilities-and-classification" class="section level4">
 <h4>Predicted probabilities and classification</h4>
@@ -898,6 +900,9 @@ observations. More detailed diagnostics (e.g. Cook’s distance, leverage,
 etc.) are also available for logistic regression, but we will not pursue
 them here; we refer to the textbooks mentioned above for a detailed
 exploration of these topics.</p>
+<p>We now move from a correctly specified classical model to a more
+flexible class of predictors, namely <strong>neural
+networks</strong>.</p>
 </div>
 </div>
 <div id="neural-networks-as-nonlinear-extensions-of-logistic-regression" class="section level3">
@@ -1019,9 +1024,9 @@ problem takes the form <span class="math display">\[
 \]</span> In other words, the parameters of the network are chosen so as
 to minimize the cross-entropy loss between the observed responses and
 the predicted probabilities.</p>
-<p>Unlike the classical logistic regression model, this optimization
-problem cannot be solved in closed form. Instead, the network parameters
-are estimated iteratively using <strong>gradient-based optimization
+<p>Unlike the classical logistic regression model, whose parameters are
+typically estimated using Fisher scoring or Newton–Raphson methods,
+neural networks are trained using <strong>gradient-based optimization
 methods</strong>, most commonly variants of <strong>stochastic gradient
 descent (SGD)</strong>. The gradients of the loss function with respect
 to the network parameters are computed efficiently using the
@@ -1097,7 +1102,8 @@ head(nn_prob)</code></pre>
 <p>We now compare the probabilities predicted by the previous logistic
 regression model and the neural network with the true probabilities
 (from the simulation) for the first few observations, together with the
-corresponding errors.</p>
+corresponding errors so as to evaluate how well their predicted
+probabilities recover the true probabilities used in the simulation.</p>
 <pre class="r"><code>comparison_nn &lt;- data.frame(
   true_prob = logit_data$true_pi,
   logistic = logit_data$fit_pi,
@@ -1193,7 +1199,7 @@ require to be illuminated somehow; see <span class="citation">(<a href="#ref-gui
 </div>
 </div>
 <div id="using-relu" class="section level3">
-<h3>Using RelU</h3>
+<h3>Using ReLU</h3>
 <p>The classical implementation of neural networks in the
 <code>nnet</code> package uses sigmoid activation functions in the
 hidden layer. Although sigmoid activations are smooth and historically
@@ -1204,11 +1210,11 @@ neural network implementations use the rectified linear unit (ReLU)
 activation function instead. Unlike the sigmoid function, ReLU does not
 saturate for positive inputs and therefore typically leads to faster and
 more stable training in deep learning models. In the next step we fit
-the same 4-5-1 architecture (in particular, with the same simulated
-data) using the <code>keras3</code> package in R, with ReLU activation
-in the hidden layer and a sigmoid activation in the output layer so
-that, as before, the final output of the network produces estimated
-probabilities for the binary response.</p>
+the same 4-5-1 architecture (in particular, starting with the same
+simulated data) using the <code>keras3</code> package in R, with ReLU
+activation in the hidden layer and a sigmoid activation in the output
+layer so that, as before, the final output of the network produces
+estimated probabilities for the binary response.</p>
 <p>Let us start by preparing the data and defining the architecture of
 the network.</p>
 <pre class="r"><code>library(keras3)
@@ -1252,15 +1258,13 @@ relu_fit |&gt; fit(
 )</code></pre>
 <p>We may now extract the fitted probabilities from the trained neural
 network and put them in a convenient format for computing the associated
-MAE.</p>
+MAE…</p>
 <pre class="r"><code># Predicted probabilities
 p_relu &lt;- relu_fit |&gt; predict(X_scaled, verbose = 0)
 p_relu &lt;- as.numeric(p_relu)
 # MAE relative to the true conditional probabilities
-mae_relu &lt;- mean(abs(true_pi - p_relu))
-mae_relu</code></pre>
-<pre><code>## [1] 0.04017645</code></pre>
-<p>Finally, we may compare this with the previous ones.</p>
+mae_relu &lt;- mean(abs(true_pi - p_relu))</code></pre>
+<p>… which we may finally compare with the previous ones.</p>
 <pre class="r"><code>mae_logistic &lt;- mean(abs(comparison_nn$error_logistic))
 mae_nn &lt;- mean(abs(comparison_nn$error_nn))
 data.frame(
@@ -1270,7 +1274,7 @@ data.frame(
 <pre><code>##                          Model     MAE
 ## 1          Logistic regression 0.03908
 ## 2        Neural network (nnet) 0.06349
-## 3 Neural network (ReLU, keras) 0.04018</code></pre>
+## 3 Neural network (ReLU, keras) 0.04635</code></pre>
 <p>We close this lab with a few thoughts.</p>
 <ul>
 <li><p>The neural network fitted with <code>keras3</code> and a ReLU
