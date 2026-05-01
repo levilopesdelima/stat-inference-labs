@@ -17,9 +17,9 @@ Instead of working with real-workd data, we prefer here to explain the method by
 We carry out this in two iterations:
 
   -  we first implement the simulation of a linear model with $p=20$ and $n=100$ in which only a few features are statistically significant (say, **four** of them). Even though we work here in the classical setting ($p<n$) and, moreover, we know beforehand which predictors are relevant, the aim  is to check the effectiveness of LASSO as a variable selector. We emphasize that the simulation only applies to the design matrix ${\bf x}$ (chosen as a random matrix with standard normal entries) with the responses $y_i$  being computed from ${\bf x}$ and the  prescribed (sparse) coefficient vector $\beta$ by means of the linear model formula below (with $e_i\sim\mathcal N(0,0.25)$).
-  -  next we explore the fact that the underlying parameters of the simulation above have been wrapped in an appropriate R function (and hence may be modified at will) in order to simulate a data set with $p=150$ and $n=100$ to which we apply the LASSO.
+  -  next we explore the fact that the underlying parameters of the simulation above have been wrapped in an appropriate R function (and hence may be modified at will) in order to simulate a data set with $p=150$ and $n=100$ to which we apply the LASSO. The resulting predictor is then evaluated using **conformal prediction**, which provides distribution-free measures of predictive accuracy via finite-sample valid prediction intervals.
 
-All the math needed to understand the simulations in this lab may be found in [@delima2025probab]; see also [@hastie2015statistical] for a full account of sparsity methods in Statistical Learning.
+All the math needed to understand the simulations in this lab may be found in [@delima2025probab]; see also [@hastie2015statistical] for a full account of sparsity methods in Statistical Learning and [@angelopoulos2024theoretical] for conformal prediction.
 
 #### A glimpse at the theory
 
@@ -243,7 +243,7 @@ This model is more parsimonious, with only 4 non-zero coefficients. When compare
 
 We now handle examples in the truly high-dimensional regime ($p>n$). The idea is to use the already available function ``simulate_lasso_data()`` to simulate the corresponding data set:
 
-```{r}
+```{r iter:2}
 sim_data_new <- simulate_lasso_data(100, 150, 456)
  
 x <- sim_data_new$x
@@ -261,7 +261,7 @@ str(sim_data_new)
 
 Since $p=150>n=100$, it is out of question to fit an OLS to the simulated data, so we immediately pass to the LASSO. 
 
-```{r}
+```{r iter:2:mod}
 lasso_model_new <- glmnet(x, y, alpha = 1)
 ```
 
@@ -273,7 +273,7 @@ plot(lasso_model_new, xvar = "lambda", label = TRUE)
 
 ...followed by the associated $k$-fold cross-validation (with $k=20$):
 
-```{r}
+```{r cross} 
 cv_lasso_new <- cv.glmnet(x, y, alpha = 1, nfolds = 20)
 plot(cv_lasso_new)
 ```
@@ -307,6 +307,207 @@ print_nonzero_coefs(coef_1se__new_nz)
 ... so that now only the four significant coefficients have survived. Note that they match their true values up to a small error, which confirms the efficiency of the LASSO as a tool which implements variable selection (via shrinkage) and restores interpretability.
 
 
+
+#### Checking LASSO accuracy with (Split) Conformal Prediction
+
+With the option ``lambda_1se_new`` above, LASSO has provided us with the fitted model 
+\[
+\widehat y=\widehat f(\widehat x):=0.14+2.31\widehat x_1-1.66\widehat x_2+3.076\widehat x_3-
+4.26\widehat x_4+
+0.00 \widehat x_5+\cdots,
+\]
+by means of which we can make **prediction** in the usual way: we enter with a new, independent covariate vector $\widehat x=(\widehat x_1,\widehat x_4,\widehat x_,\widehat x_4,\widehat x_5,\cdots)$, drawn from the same distribution used to generated the training data, and use the above formula to get the predicted answer $\widehat y$. We may evaluate the accuracy of this procedure by means of the high probabiblity bounds in [@delima2025probab], but we prefer instead to proceed in a different manner and use **Conformal Prediction** to this effect. 
+
+The first step is to draw, again from the same distribution, a fresh **calibraton data set** $(x_i^c,y_i^c)\in\mathbb R^{p}\times \mathbb R$, $i=1,\dots,n$,...
+
+```{r}
+## Fresh calibration sample (with n=n_obs and p=n_pred)
+calib_data <- simulate_lasso_data(n_obs = 100, n_pred = 150, seed = 222)
+```
+
+...which will be used to compute the **conformity scores** by means of the corresponding absolute residuals
+\[
+S_i=|y^c_i-\widehat f(x^c_i)|.
+\]
+
+
+```{r}
+## Calibration scores
+calib_pred <- predict(
+  lasso_model_new,
+  newx = calib_data$x,
+  s = lambda_1se_new
+)
+scores <- abs(calib_data$y - as.vector(calib_pred))
+```
+
+
+Clearly, this measures the overall discrepancy between the response \(y^c\) and the prediction \(\widehat f(x^c)\) across the complementary calibration data set, 
+hence the **conformity** terminology. Note that this
+inherits the structure of the underlying learning algorithm $\widehat f$.
+
+The next step is to calibrate a threshold $\widehat q$: we pass from $\{S_i\}_{i=1}^n$ to the corresponding order statistic 
+\[
+S_{(1)}\leq\dots\leq S_{(n)},
+\]
+and, given a coverage target $1-\alpha\in(0,1)$, we set
+\[
+\widehat q=S_{(k)}, \quad k=\lceil\left(1-\alpha\right)\left({n}/{2}+1\right)\rceil.
+\]
+
+```{r}
+alpha_cp <- 0.1
+m <- length(scores)
+k <- ceiling((1 - alpha_cp) * (m + 1))
+k <- min(k, m)
+q_hat <- sort(scores)[k]
+```
+
+
+The key point now is that, as explained in [@angelopoulos2023conformal], each new test data point $(x_{\rm new},y_{\rm new})$, again independently drawn from the same population, 
+satisfies the **conformal prediction bound**
+\[
+P(y_{\rm new}\in[\widehat f(x_{\rm new})-\widehat q,\widehat f(x_{\rm new})+\widehat q])\geq 1-\alpha.
+\]
+In summary, the conformity scores are the absolute residuals of the LASSO model on the calibration sample, which are then employed to estimate the typical prediction error used to construct the prediction intervals.
+Note that the lengths of these intervals remain constant across the calibration:
+
+```{r}
+length_pred_int <- 2*q_hat
+length_pred_int
+```
+
+
+We now turn to the empirical confirmation of these prediction intervals. For this we draw, again from the same population,  a fresh **test data set** $(x_j^t,y_j^t)\in\mathbb R^p\times\mathbb R$, $j=1,\dots, n_t$, which is supposed to contain $(x_{\rm new},y_{\rm new})$ above (we take $n_t=1000$ for concreteness). This allows us to define the **empirical coverage** as the random variable counting the frequency according to which $y_j^t$ falls within the corresponding prediction interval (centered at $\widehat f(x_j^t)$):
+\[
+\widehat{\mathrm{EC}}
+=
+\frac{1}{n_{{t}}}
+\sum_{j=1}^{n_{{t}}}
+\mathbf{1}_{\left\{
+\widehat f(X_j^{{t}}) - \widehat q
+\;\le\;
+Y_j^{{t}}
+\;\le\;
+\widehat f(X_j^{{t}}) + \widehat q
+\right\}}.
+\]
+ 
+
+
+```{r}
+## --- Test prediction intervals ---
+test_data  <- simulate_lasso_data(n_obs = 1000, n_pred = 150, seed = 333)
+
+test_pred <- predict(
+  lasso_model_new,
+  newx = test_data$x,
+  s = lambda_1se_new
+)
+test_pred <- as.vector(test_pred)
+
+lower <- test_pred - q_hat
+upper <- test_pred + q_hat
+
+coverage <- mean(test_data$y >= lower & test_data$y <= upper)
+coverage
+```
+
+
+The observed coverage $.944$ exceeds the nominal level $1-\alpha=0.9$ not only due to the finite-sample conservativeness of conformal prediction, but also because the LASSO estimator selected via the 1-SE rule tends to underfit, leading to inflated residuals and consequently wider prediction intervals.
+ 
+We may also plot the variation of this empirical coverage against the number of observations in the test set...
+
+
+```{r}
+library(ggplot2)
+covered <- (test_data$y >= lower) & (test_data$y <= upper)
+n_test <- length(covered)
+cum_coverage <- cumsum(covered) / (1:n_test)
+df_cov <- data.frame(
+  k = 1:n_test,
+  coverage = cum_coverage
+)
+ggplot(df_cov, aes(x = k, y = coverage)) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 1 - alpha_cp, linetype = "dashed") +
+  labs(
+    title = "Running empirical coverage",
+    subtitle = paste0("Target level = ", 1 - alpha_cp),
+    x = "Number of test observations",
+    y = "Empirical coverage"
+  ) +
+  theme_minimal()
+```
+
+...to confirm that the running empirical coverage stabilizes around the target level, illustrating the validity of conformal prediction as the sample size increases. 
+
+We may also visualize the distribution of the prediction intervals (we use only the first 50 test points for readability):
+
+
+```{r}
+plot_data <- data.frame(
+  index = 1:length(test_data$y),
+  y_true = test_data$y,
+  lower = lower,
+  upper = upper,
+  covered = test_data$y >= lower & test_data$y <= upper
+)
+
+plot_data_small <- plot_data[1:50, ]
+
+ggplot(plot_data_small, aes(x = index, y = y_true)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper, color = covered), width = 0.2) +
+  geom_point(aes(color = covered), size = 1.8) +
+  labs(
+    title = "Conformal prediction intervals for LASSO",
+    subtitle = paste0(
+      "Target coverage = ", 1 - alpha_cp,
+      ", empirical coverage = ", round(coverage, 3)
+    ),
+    x = "Test observation",
+    y = "Response"
+  ) +
+  theme_minimal()
+```
+
+Finally, we may plot a histogram for the empirical distribution of the calibration errors used to build the conformal intervals:
+
+```{r}
+calib_scores <- data.frame(scores = scores)
+
+ggplot(calib_scores, aes(x = scores)) +
+  geom_histogram(bins = 25, color = "white") +
+  geom_vline(xintercept = q_hat, linetype = "dashed", linewidth = 1) +
+  labs(
+    title = "Calibration residuals",
+    subtitle = paste0("Conformal threshold q_hat = ", round(q_hat, 3)),
+    x = "Absolute residual",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+
+Since bars to the left of the dashed line correspond to calibration errors covered by the chosen threshold $\widehat q$ and 
+bars to the right are associated to large calibration errors beyond this threshold,
+this plot explains visually where the interval radius comes from: the conformal prediction is using the upper tail of the calibration residuals to choose a safe prediction-error margin.
+
+We end up this lab with a few general comments regarding conformal prediction:
+
+-- In contrast to the **conditional** prediction bounds for the LASSO discussed in [@delima2025probab], which rely on the **fixed design assumption**, where the covariates are treated as deterministic and all randomness is attributed to the noise, thereby exploiting both the linear structure and the Gaussianity of the model, the conformal prediction intervals constructed above are **marginal** in nature, in the sense that their coverage guarantee holds on average over the joint distribution of the data. 
+Despite this apparent drawback, the method has the advantage of remaining valid when the covariates themselves are random. 
+
+-- Another key point is that the validity of the prediction intervals constructed above is distribution-free, while their size reflects the accuracy of the underlying predictor $\widehat f$. This decoupling makes conformal prediction not only compatible with the LASSO, where classical inference typically breaks down in the high-dimensional regime $p\gg n$,  but also well suited to the broader demands of Statistical Learning.
+
+-- Although in the application to the LASSO above, and more generally in Statistical Learning, one typically assumes that the sample is i.i.d., the validity properties of conformal prediction continue to hold under the weaker assumption of **exchangeability**, that is, when the joint distribution of the sample is invariant under arbitrary permutations of its entries, with these guarantees remaining completely model-agnostic and applying to any predictor $\widehat f$, the latter influencing only the efficiency (i.e., the size) of the resulting prediction intervals. Additionally, if the conformity scores are almost surely distinct (i.e., there are no ties) then the conformal prediction interval also satisfies the upper bound
+\[
+P(y_{\rm new}\in[\widehat f(x_{\rm new})-\widehat q,\widehat f(x_{\rm new})+\widehat q])
+\;\le\;
+1 - \alpha + \frac{1}{n+1},
+\]
+where $n$ denotes the size of the calibration sample. This highlights the robustness of conformal prediction, which achieves valid uncertainty quantification independently of the complexity or correctness of the underlying model.
+
+For an account of conformal prediction in textbook form, we refer to [@angelopoulos2024theoretical].
 
 #### References
 
